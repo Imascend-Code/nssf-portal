@@ -213,12 +213,16 @@ export function useUploadAttachment(requestId: number) {
 /* =========================
    REPORTS
    ========================= */
-
 export function useReport() {
   const token = useAuthStore((s) => s.accessToken);
   return useQuery({
     queryKey: ["report-summary"],
     enabled: !!token,
     queryFn: async () => (await api.get("/reports/summary/")).data,
+    retry: (failureCount, err: any) => {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) return false; // perms/auth problem, don't spam
+      return failureCount < 2;
+    },
   });
 }
