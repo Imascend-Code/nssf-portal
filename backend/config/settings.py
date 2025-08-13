@@ -136,10 +136,61 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "NSSF Pensioner Self-Service API",
-    "DESCRIPTION": "DRF API for pensioners, staff, admin.",
+    "DESCRIPTION": "Public + authenticated endpoints for Pensioners, Staff, and Admin.",
     "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_INCLUDE_SCHEMA": False,  # schema is served at /api/schema/
+    "SCHEMA_PATH_PREFIX": r"/api/v1",  # show only API v1 routes
+    "COMPONENT_SPLIT_REQUEST": True,   # nicer request/response separation
+    "SERVE_PERMISSIONS": [],           # allow docs in dev
+    "CONTACT": {"name": "NSSF Support", "email": "support@nssf.test"},
+    "LICENSE": {"name": "MIT"},
+    "EXTERNAL_DOCS": {"description": "Project Readme", "url": "https://example.com/readme"},
+
+    # Proper JWT bearer
+    "SECURITY": [{"BearerAuth": []}],
+    "AUTHENTICATION_WHITELIST": [],
+
+    # UI tweaks
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "displayRequestDuration": True,
+        "persistAuthorization": True,
+        "filter": True,
+        "tryItOutEnabled": True,
+    },
+
+    # Custom components (Bearer)
+    "COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Use the access token from /api/v1/auth/login/ as: `Authorization: Bearer <token>`",
+            }
+        }
+    },
+
+    # Optional servers section for the spec
+    "SERVERS": [
+        {"url": "http://127.0.0.1:8000", "description": "Local Dev"},
+        {"url": "https://api.nssf.test", "description": "Staging/Prod"},
+    ],
+    
+    "TAG_NAMES": [
+        "Auth",
+        "Profile",
+        "Beneficiaries",
+        "Payments",
+        "Service Requests",
+        "Notifications",
+        "Documents",
+        "Reports",
+        "Audits",
+    ],
+
 }
+
 
 from datetime import timedelta
 SIMPLE_JWT = {

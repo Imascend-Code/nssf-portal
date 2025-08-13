@@ -1,52 +1,97 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+// src/api/hooks.ts
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "./client";
+import { useAuthStore, User } from "../store/auth";
+
+// Auth
+export function useLogin() {
+  const login = useAuthStore((s) => s.login);
+  return useMutation({
+    mutationFn: async (payload: { email: string; password: string }) => {
+      const { data: tokens } = await api.post("/auth/login/", payload);
+      const { data: me } = await api.get<User>("/users/me/");
+      login(me, { access: tokens.access, refresh: tokens.refresh });
+      return me;
+    },
+  });
+}
+
+export function useRegister() {
+  const login = useAuthStore((s) => s.login);
+  return useMutation({
+    mutationFn: async (payload: { email: string; password: string; full_name?: string; phone?: string }) => {
+      await api.post("/auth/register/", payload);
+      const { data: tokens } = await api.post("/auth/login/", { email: payload.email, password: payload.password });
+      const { data: me } = await api.get<User>("/users/me/");
+      login(me, { access: tokens.access, refresh: tokens.refresh });
+      return me;
+    },
+  });
+}
 
 export function useMe() {
-  return useQuery({ queryKey:["me"], queryFn: async()=> (await api.get("/auth/me/")).data });
+  const setUser = useAuthStore((s) => s.setUser);
+  const user = useAuthStore((s) => s.user);
+  const enabled = !!useAuthStore.getState().accessToken && !user;
+  return useQuery({
+    queryKey: ["me"],
+    enabled,
+    queryFn: async () => {
+      const { data } = await api.get<User>("/users/me/");
+      setUser(data);
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 }
-export function useProfile() {
-  return useQuery({ queryKey:["profile"], queryFn: async()=> (await api.get("/profiles/me/")).data });
+
+// Payments
+export function usePayments(params?: Record<string, any>) {
+  return useQuery({
+    queryKey: ["payments", params],
+    queryFn: async () => (await api.get("/payments/", { params })).data,
+  });
 }
-export function useUpdateProfile() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (patch:any)=> (await api.patch("/profiles/me/","avatar" in patch ? patch : patch, {headers: patch?.avatar ? {"Content-Type":"multipart/form-data"}:{} })).data,
-    onSuccess: ()=> qc.invalidateQueries({queryKey:["profile"]})
-  })
+
+// Requests (pensioner’s own)
+export function useMyRequests(params?: Record<string, any>) {
+  return useQuery({
+    queryKey: ["my-requests", params],
+    queryFn: async () => (await api.get("/requests/", { params })).data, // backend filters to requester for pensioner role
+  });
 }
-export function useBeneficiaries() {
-  return useQuery({queryKey:["beneficiaries"], queryFn: async()=> (await api.get("/profiles/me/beneficiaries/")).data})
-}
-export function useAddBeneficiary() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (payload:any)=> api.post("/profiles/me/beneficiaries/", payload).then(r=>r.data),
-    onSuccess: ()=> qc.invalidateQueries({queryKey:["beneficiaries"]})
-  })
-}
-export function usePayments(filters:any = {}) {
-  return useQuery({ queryKey:["payments",filters], queryFn: async()=> (await api.get("/payments/", {params:filters})).data })
-}
+
 export function useCategories() {
-  return useQuery({ queryKey:["categories"], queryFn: async()=> (await api.get("/service-categories/")).data })
+  return useQuery({
+    queryKey: ["service-categories"],
+    queryFn: async () => (await api.get("/service-categories/")).data,
+  });
 }
-export function useMyRequests(filters:any={}) {
-  return useQuery({ queryKey:["requests",filters], queryFn: async()=> (await api.get("/requests/", {params:filters})).data })
-}
+
 export function useCreateRequest() {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload:any)=> api.post("/requests/", payload).then(r=>r.data),
-    onSuccess: ()=> qc.invalidateQueries({queryKey:["requests"]})
-  })
+    mutationFn: async (payload: { title: any; description: any; category: number; priority: any }) => {
+      const { data } = await api.post("/requests/", payload);
+      return data;
+    },
+  });
 }
-export function useUploadAttachment(id:number) {
-  const qc = useQueryClient();
+
+export function useUploadAttachment(requestId: number) {
   return useMutation({
-    mutationFn: (fd:FormData)=> api.post(`/requests/${id}/attachments/`, fd, {headers:{"Content-Type":"multipart/form-data"}}).then(r=>r.data),
-    onSuccess: ()=> qc.invalidateQueries({queryKey:["requests"]})
-  })
+    mutationFn: async (formData: FormData) => {
+      const { data } = await api.post(`/requests/${requestId}/attachments/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data;
+    },
+  });
 }
+
+// Admin report
 export function useReport() {
-  return useQuery({ queryKey:["report"], queryFn: async()=> (await api.get("/reports/summary/")).data })
+  return useQuery({
+    queryKey: ["report-summary"],
+    queryFn: async () => (await api.get("/reports/summary/")).data,
+  });
 }

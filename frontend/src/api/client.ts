@@ -1,45 +1,62 @@
+// src/api/client.ts
 import axios from "axios";
 import { useAuthStore } from "../store/auth";
 
 export const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api/v1",
-  withCredentials: false,
+  baseURL: import.meta.env.VITE_API_URL, // e.g. http://127.0.0.1:8000/api/v1
+  headers: { "Content-Type": "application/json" },
 });
 
+// attach access token
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const { accessToken } = useAuthStore.getState();
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
 
-let isRefreshing = false;
-let queue: any[] = [];
+// refresh on 401 once
+let refreshing = false;
+let queue: Array<(token: string | null) => void> = [];
 
 api.interceptors.response.use(
   (r) => r,
   async (error) => {
+    const { refreshToken, setTokens, logout } = useAuthStore.getState();
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve,reject)=>queue.push({resolve,reject}))
-          .then((token:string)=>{ original.headers.Authorization=`Bearer ${token}`; return api(original); });
+
+    if (error?.response?.status === 401 && !original._retry && refreshToken) {
+      if (refreshing) {
+        return new Promise((resolve, reject) => {
+          queue.push((t) => {
+            if (!t) return reject(error);
+            original.headers.Authorization = `Bearer ${t}`;
+            resolve(api(original));
+          });
+        });
       }
-      original._retry = true; isRefreshing = true;
+      original._retry = true;
+      refreshing = true;
       try {
-        const refresh = useAuthStore.getState().refreshToken;
-        if (!refresh) throw new Error("no refresh");
-        const res = await axios.post("http://127.0.0.1:8000/api/v1/auth/refresh/", {refresh});
-        const newAccess = res.data.access;
-        useAuthStore.getState().setTokens(newAccess, refresh);
-        queue.forEach(p => p.resolve(newAccess)); queue = [];
+        const { data } = await axios.post(
+          `${import.meta.env.VITE_API_URL}/auth/refresh/`,
+          { refresh: refreshToken },
+          { headers: { "Content-Type": "application/json" } }
+        );
+        const newAccess = data?.access;
+        setTokens({ access: newAccess, refresh: refreshToken });
+        queue.forEach((fn) => fn(newAccess));
+        queue = [];
+        original.headers.Authorization = `Bearer ${newAccess}`;
         return api(original);
-      } catch (e) {
-        queue.forEach(p => p.reject(e)); queue = [];
-        useAuthStore.getState().logout();
+      } catch {
+        queue.forEach((fn) => fn(null));
+        queue = [];
+        logout();
+        throw error;
       } finally {
-        isRefreshing = false;
+        refreshing = false;
       }
     }
-    return Promise.reject(error);
+    throw error;
   }
 );

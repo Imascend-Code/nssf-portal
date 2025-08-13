@@ -4,6 +4,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
+from config.schema import doc_tag, FILE_UPLOAD_REQUEST, paginated_response
 from .models import ServiceCategory, ServiceRequest, RequestAttachment, RequestStatus
 from .serializers import (
     ServiceCategorySerializer, ServiceRequestSerializer,
@@ -49,6 +51,13 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
         if request.user.role == "PENSIONER":
             return Response({"detail": "Only staff can update a request."}, status=403)
         return super().partial_update(request, *args, **kwargs)
+    
+    @extend_schema(
+        summary="Upload attachment",
+        description="Attach a PDF/JPG/PNG (<=5MB) to a request.",
+        request=FILE_UPLOAD_REQUEST,
+        responses={201: RequestAttachmentSerializer},
+    )
 
     @action(methods=["post"], detail=True, parser_classes=[MultiPartParser, FormParser])
     def attachments(self, request, pk=None):

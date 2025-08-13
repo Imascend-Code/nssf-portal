@@ -1,20 +1,51 @@
-import { FormEvent, useState } from "react";
-import { useAuthStore } from "../../store/auth";
+// src/pages/Auth/Register.tsx
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRegister } from "../../api/hooks";
 import { useNavigate } from "react-router-dom";
 
-export default function Register(){
-  const [email,setEmail]=useState(""); const [password,setPassword]=useState("");
-  const [full_name,setName]=useState(""); const [phone,setPhone]=useState("");
-  const nav = useNavigate(); const register = useAuthStore(s=>s.register);
-  async function onSubmit(e:FormEvent){ e.preventDefault(); await register({email,password,full_name,phone}); nav("/dashboard"); }
+const schema = z.object({
+  full_name: z.string().min(2),
+  phone: z.string().optional(),
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+type FormData = z.infer<typeof schema>;
+
+export default function Register() {
+  const { mutateAsync, isPending } = useRegister();
+  const nav = useNavigate();
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
+
   return (
-    <form onSubmit={onSubmit} style={{maxWidth:420, margin:"40px auto", display:"grid", gap:12}}>
-      <h2>Create account</h2>
-      <input placeholder="Full name" value={full_name} onChange={e=>setName(e.target.value)} required/>
-      <input placeholder="Phone" value={phone} onChange={e=>setPhone(e.target.value)} />
-      <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
-      <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={8}/>
-      <button>Create</button>
+    <form onSubmit={handleSubmit(async (values) => {
+      await mutateAsync(values);
+      nav("/dashboard", { replace: true });
+    })} className="max-w-md mx-auto space-y-3 p-6 border rounded-lg mt-8">
+      <h1 className="text-xl font-semibold">Create account</h1>
+      <div>
+        <label className="block text-sm mb-1">Full name</label>
+        <input {...register("full_name")} className="border rounded w-full p-2" />
+        {errors.full_name && <p className="text-red-600 text-sm">{errors.full_name.message}</p>}
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Phone</label>
+        <input {...register("phone")} className="border rounded w-full p-2" />
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Email</label>
+        <input {...register("email")} className="border rounded w-full p-2" />
+        {errors.email && <p className="text-red-600 text-sm">{errors.email.message}</p>}
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Password</label>
+        <input type="password" {...register("password")} className="border rounded w-full p-2" />
+        {errors.password && <p className="text-red-600 text-sm">{errors.password.message}</p>}
+      </div>
+      <button disabled={isPending} className="border rounded px-3 py-2">
+        {isPending ? "Creating..." : "Create account"}
+      </button>
     </form>
-  )
+  );
 }
