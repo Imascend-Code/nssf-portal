@@ -11,7 +11,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: async (payload: { email: string; password: string }) => {
       const { data: tokens } = await api.post("/auth/login/", payload);
-      const { data: me } = await api.get<User>("/users/me/");
+      const { data: me } = await api.get<User>("/profiles/me/");
       login(me, { access: tokens.access, refresh: tokens.refresh });
       return me;
     },
@@ -24,7 +24,7 @@ export function useRegister() {
     mutationFn: async (payload: { email: string; password: string; full_name?: string; phone?: string }) => {
       await api.post("/auth/register/", payload);
       const { data: tokens } = await api.post("/auth/login/", { email: payload.email, password: payload.password });
-      const { data: me } = await api.get<User>("/users/me/");
+      const { data: me } = await api.get<User>("/profiles/me/");
       login(me, { access: tokens.access, refresh: tokens.refresh });
       return me;
     },
@@ -39,7 +39,7 @@ export function useMe() {
     queryKey: ["me"],
     enabled,
     queryFn: async () => {
-      const { data } = await api.get<User>("/users/me/");
+      const { data } = await api.get<User>("/profiles/me/");
       setUser(data);
       return data;
     },

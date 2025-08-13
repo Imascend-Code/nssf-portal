@@ -3,14 +3,16 @@ import axios from "axios";
 import { useAuthStore } from "../store/auth";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL, // e.g. http://127.0.0.1:8000/api/v1
+  baseURL: "http://127.0.0.1:8000/api/v1", //import.meta.env.VITE_API_URL, // e.g. http://127.0.0.1:8000/api/v1
   headers: { "Content-Type": "application/json" },
 });
 
 // attach access token
 api.interceptors.request.use((config) => {
-  const { accessToken } = useAuthStore.getState();
-  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  const token = useAuthStore.getState().accessToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 

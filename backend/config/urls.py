@@ -29,7 +29,7 @@ router.register(r"payments", PaymentViewSet, basename="payments")
 router.register(r"service-categories", ServiceCategoryViewSet, basename="service-categories")
 router.register(r"requests", ServiceRequestViewSet, basename="requests")
 router.register(r"notifications", NotificationViewSet, basename="notifications")
-router.register(r"audits", AuditLogViewSet, basename="audits")  # ✅ optional
+router.register(r"audits", AuditLogViewSet, basename="audits")  
 
 urlpatterns = [
     path("admin/", admin.site.urls),

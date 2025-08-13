@@ -1,29 +1,27 @@
-# accounts/views.py
-from rest_framework import generics, permissions, status
+from rest_framework import permissions, status, views
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view, permission_classes
-from .serializers import RegisterSerializer, MeSerializer, PasswordChangeSerializer
+from .serializers import UserSerializer, MeUpdateSerializer, RegisterSerializer
 
 User = get_user_model()
 
-class RegisterView(generics.CreateAPIView):
-    permission_classes = [permissions.AllowAny]
-    serializer_class = RegisterSerializer
-
-class MeView(generics.RetrieveUpdateAPIView):
+class MeView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = MeSerializer
-    def get_object(self): return self.request.user
 
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])  # <-- enforce auth
-def change_password(request):
-    ser = PasswordChangeSerializer(data=request.data)
-    ser.is_valid(raise_exception=True)
-    user = request.user
-    if not user.check_password(ser.validated_data["old_password"]):
-        return Response({"detail":"Old password incorrect"}, status=400)
-    user.set_password(ser.validated_data["new_password"])  # validated w/ validators
-    user.save()
-    return Response({"detail":"Password updated"})
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)
+
+    def patch(self, request):
+        ser = MeUpdateSerializer(data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.update(request.user, ser.validated_data)
+        return Response(UserSerializer(request.user).data)
+
+class RegisterView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        ser = RegisterSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        user = ser.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
