@@ -1,146 +1,215 @@
 // src/pages/Dashboard.tsx
-import { useProfile, usePayments, useMyRequests } from "@/api/hooks"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, CreditCard, FileText, Users } from "lucide-react"
+import * as React from 'react';
+import { useProfile, usePayments, useMyRequests } from '@/api/hooks';
+
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardHeader,
+  CardContent,
+  Typography,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableContainer,
+  Chip,
+  CircularProgress,
+  Stack,
+  Avatar,
+} from '@mui/material';
+
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import DescriptionIcon from '@mui/icons-material/Description';
+import GroupsIcon from '@mui/icons-material/Groups';
+
+function StatusChip({ status }: { status: string }) {
+  const s = (status || '').toLowerCase();
+  let color: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' = 'default';
+
+  // Map your domain statuses to chip colors
+  if (['processed', 'resolved', 'closed', 'success', 'completed'].includes(s)) color = 'success';
+  else if (['pending', 'in_progress', 'queued'].includes(s)) color = 'warning';
+  else if (['rejected', 'failed', 'error'].includes(s)) color = 'error';
+  else color = 'default';
+
+  return <Chip label={status} color={color} size="small" variant="outlined" sx={{ textTransform: 'capitalize' }} />;
+}
 
 export default function Dashboard() {
-  const { data: profile } = useProfile()
-  const payments = usePayments({ page_size: 5 })
-  const requests = useMyRequests({ page_size: 5 })
+  const { data: profile } = useProfile();
+  const payments = usePayments({ page_size: 5 });
+  const requests = useMyRequests({ page_size: 5 });
+
+  const pendingRequestsCount = (requests.data?.results || []).filter(
+    (r: any) => r.status !== 'resolved' && r.status !== 'closed'
+  ).length;
 
   const kpis = [
-    { title: "Total Payments", value: payments.data?.length ?? 0, icon: CreditCard },
-    { title: "Pending Requests", value: (requests.data?.results || []).filter((r: any) => r.status !== "resolved" && r.status !== "closed").length, icon: FileText },
-    { title: "Beneficiaries", value: profile?.beneficiaries_count ?? 0, icon: Users },
-  ]
+    { title: 'Total Payments', value: payments.data?.length ?? 0, icon: <CreditCardIcon /> },
+    { title: 'Pending Requests', value: pendingRequestsCount, icon: <DescriptionIcon /> },
+    { title: 'Beneficiaries', value: profile?.beneficiaries_count ?? 0, icon: <GroupsIcon /> },
+  ];
+
+  const [tab, setTab] = React.useState<'payments' | 'requests'>('payments');
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}!</h1>
-        <p className="text-muted-foreground text-sm mt-1">
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight={700}>
+          Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}!
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           Overview of your account activity and contributions.
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         {kpis.map((k, i) => (
-          <Card key={i} className="rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{k.title}</CardTitle>
-              <k.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{k.value}</div>
-              <p className="text-xs text-muted-foreground">Updated just now</p>
-            </CardContent>
-          </Card>
+          <Grid item xs={12} sm={6} lg={4} key={i}>
+            <Card variant="outlined" sx={{ borderRadius: 3, height: '100%' }}>
+              <CardHeader
+                title={<Typography variant="subtitle2">{k.title}</Typography>}
+                action={<Avatar sx={{ width: 28, height: 28, bgcolor: 'action.hover' }}>{k.icon}</Avatar>}
+                sx={{ pb: 0.5 }}
+              />
+              <CardContent sx={{ pt: 1.5 }}>
+                <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1 }}>
+                  {k.value}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Updated just now
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         ))}
-      </div>
+      </Grid>
 
-      {/* Data Tabs */}
-      <Tabs defaultValue="payments" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="payments">Recent Payments</TabsTrigger>
-          <TabsTrigger value="requests">Recent Requests</TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <CardHeader
+          title={
+            <Tabs
+              value={tab}
+              onChange={(_, v) => setTab(v)}
+              aria-label="dashboard tabs"
+              sx={{ minHeight: 0, '& .MuiTab-root': { py: 1, textTransform: 'none' } }}
+            >
+              <Tab value="payments" label="Recent Payments" />
+              <Tab value="requests" label="Recent Requests" />
+            </Tabs>
+          }
+          sx={{ pb: 0 }}
+        />
 
-        <TabsContent value="payments">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle>Payments</CardTitle>
-              <CardDescription>Your latest transactions</CardDescription>
-            </CardHeader>
-            <CardContent>
+        <CardContent>
+          {/* Payments Tab */}
+          {tab === 'payments' && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+                Payments
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Your latest transactions
+              </Typography>
+
               {payments.isLoading ? (
-                <div className="flex justify-center p-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+                <Stack alignItems="center" justifyContent="center" sx={{ py: 4 }}>
+                  <CircularProgress size={28} />
+                </Stack>
               ) : payments.data?.length ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+                <TableContainer sx={{ borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead>
                       <TableRow>
-                        <TableHead>Period</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Reference</TableHead>
+                        <TableCell>Period</TableCell>
+                        <TableCell>Amount</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Reference</TableCell>
                       </TableRow>
-                    </TableHeader>
+                    </TableHead>
                     <TableBody>
                       {payments.data.map((p: any) => (
-                        <TableRow key={p.id}>
+                        <TableRow key={p.id} hover>
                           <TableCell>
                             {p.period_start} – {p.period_end}
                           </TableCell>
-                          <TableCell>{new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX" }).format(p.amount)}</TableCell>
                           <TableCell>
-                            <Badge variant={p.status === "processed" ? "default" : p.status === "pending" ? "secondary" : "destructive"}>
-                              {p.status}
-                            </Badge>
+                            {new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX' }).format(p.amount)}
                           </TableCell>
-                          <TableCell>{p.reference || "—"}</TableCell>
+                          <TableCell>
+                            <StatusChip status={p.status} />
+                          </TableCell>
+                          <TableCell>{p.reference || '—'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </div>
+                </TableContainer>
               ) : (
-                <p className="text-sm text-muted-foreground">No payments found.</p>
+                <Typography variant="body2" color="text.secondary">
+                  No payments found.
+                </Typography>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </Box>
+          )}
 
-        <TabsContent value="requests">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle>Requests</CardTitle>
-              <CardDescription>Latest service requests</CardDescription>
-            </CardHeader>
-            <CardContent>
+          {/* Requests Tab */}
+          {tab === 'requests' && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+                Requests
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Latest service requests
+              </Typography>
+
               {requests.isLoading ? (
-                <div className="flex justify-center p-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+                <Stack alignItems="center" justifyContent="center" sx={{ py: 4 }}>
+                  <CircularProgress size={28} />
+                </Stack>
               ) : (requests.data?.results || []).length ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+                <TableContainer sx={{ borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead>
                       <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
+                        <TableCell>Title</TableCell>
+                        <TableCell>Category</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Priority</TableCell>
                       </TableRow>
-                    </TableHeader>
+                    </TableHead>
                     <TableBody>
                       {requests.data.results.map((r: any) => (
-                        <TableRow key={r.id}>
-                          <TableCell className="font-medium">{r.title}</TableCell>
-                          <TableCell>{r.category?.name || "—"}</TableCell>
+                        <TableRow key={r.id} hover>
+                          <TableCell sx={{ fontWeight: 600 }}>{r.title}</TableCell>
+                          <TableCell>{r.category?.name || '—'}</TableCell>
                           <TableCell>
-                            <Badge variant={r.status === "resolved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"}>
-                              {r.status}
-                            </Badge>
+                            <StatusChip status={r.status} />
                           </TableCell>
-                          <TableCell className="capitalize">{r.priority}</TableCell>
+                          <TableCell sx={{ textTransform: 'capitalize' }}>{r.priority}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </div>
+                </TableContainer>
               ) : (
-                <p className="text-sm text-muted-foreground">No requests yet.</p>
+                <Typography variant="body2" color="text.secondary">
+                  No requests yet.
+                </Typography>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    </Container>
+  );
 }

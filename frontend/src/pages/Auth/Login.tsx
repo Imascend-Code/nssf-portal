@@ -1,19 +1,32 @@
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useLogin } from "@/api/hooks";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Lock, Mail } from "lucide-react";
-import { motion } from "framer-motion";
-import { ShieldCheck } from "lucide-react";
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useLogin } from '@/api/hooks';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const schema = z.object({ 
-  email: z.string().email("Please enter a valid email address"), 
-  password: z.string().min(6, "Password must be at least 6 characters") 
+import {
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  Typography,
+  TextField,
+  Button,
+  InputAdornment,
+  Container,
+  CircularProgress,
+  Link as MUILink,
+} from '@mui/material';
+
+import SecurityIcon from '@mui/icons-material/Security';
+import MailIcon from '@mui/icons-material/Mail';
+import LockIcon from '@mui/icons-material/Lock';
+import { motion } from 'framer-motion';
+
+const schema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -21,116 +34,139 @@ export default function Login() {
   const { mutateAsync, isPending } = useLogin();
   const nav = useNavigate();
   const loc = useLocation() as any;
-  const returnTo = loc?.state?.returnTo || "/dashboard";
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const returnTo = loc?.state?.returnTo || '/dashboard';
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-md"
-      >
-        <Card className="border-border/50 shadow-lg">
-          <CardHeader className="space-y-1 text-center">
-            <div className="flex justify-center mb-4">
-              <ShieldCheck className="h-10 w-10 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Welcome back</CardTitle>
-            <CardDescription>
-              Sign in to access your pension account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form
-              className="space-y-4"
-              onSubmit={handleSubmit(async (values) => { 
-                await mutateAsync(values); 
-                nav(returnTo, { replace: true }); 
-              })}
-            >
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    className="pl-9"
-                    {...register("email")}
-                    aria-invalid={!!errors.email}
-                  />
-                </div>
-                {errors.email && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-9"
-                    {...register("password")}
-                    aria-invalid={!!errors.password}
-                  />
-                </div>
-                {errors.password && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="px-0 text-muted-foreground hover:text-primary"
-                  type="button"
-                  onClick={() => nav("/forgot-password")}
-                >
-                  Forgot password?
-                </Button>
-              </div>
-              
-              <Button className="w-full" size="lg" disabled={isPending}>
-                {isPending ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75" />
-                    </svg>
-                    Signing in...
-                  </span>
-                ) : (
-                  "Sign in"
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Button
-                variant="link"
-                size="sm"
-                className="px-0 text-primary hover:text-primary/80"
-                onClick={() => nav("/register")}
+    <Box
+      sx={{
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        bgcolor: 'background.default',
+        backgroundImage: (t) =>
+          t.palette.mode === 'light'
+            ? 'linear-gradient(135deg, rgba(76,175,80,0.06), rgba(255,152,0,0.06))'
+            : 'linear-gradient(135deg, rgba(76,175,80,0.12), rgba(255,152,0,0.12))',
+      }}
+    >
+      <Container maxWidth="sm">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28 }}
+        >
+          <Card elevation={6} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <CardHeader
+              title={
+                <Box textAlign="center">
+                  <Box display="flex" justifyContent="center" mb={1.5}>
+                    <SecurityIcon color="primary" sx={{ fontSize: 40 }} />
+                  </Box>
+                  <Typography variant="h5" component="h1">
+                    Welcome back
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Sign in to access your pension account
+                  </Typography>
+                </Box>
+              }
+            />
+            <CardContent sx={{ pt: 0 }}>
+              <Box
+                component="form"
+                noValidate
+                onSubmit={handleSubmit(async (values) => {
+                  await mutateAsync(values);
+                  nav(returnTo, { replace: true });
+                })}
+                sx={{ display: 'grid', gap: 2.5 }}
               >
-                Create one
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </div>
+                <TextField
+                  id="email"
+                  label="Email address"
+                  type="email"
+                  autoComplete="email"
+                  fullWidth
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <MailIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  {...register('email')}
+                />
+
+                <TextField
+                  id="password"
+                  label="Password"
+                  type="password"
+                  autoComplete="current-password"
+                  fullWidth
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  {...register('password')}
+                />
+
+                <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    sx={{ px: 0, minWidth: 0 }}
+                    onClick={() => nav('/forgot-password')}
+                  >
+                    Forgot password?
+                  </Button>
+                </Box>
+
+                <Button
+                  type="submit"
+                  size="large"
+                  variant="contained"
+                  disabled={isPending}
+                  sx={{ mt: 0.5 }}
+                >
+                  {isPending ? (
+                    <Box display="inline-flex" alignItems="center" gap={1}>
+                      <CircularProgress size={18} thickness={5} />
+                      Signing in...
+                    </Box>
+                  ) : (
+                    'Sign in'
+                  )}
+                </Button>
+
+                <Typography variant="body2" color="text.secondary" textAlign="center">
+                  Don&apos;t have an account?{' '}
+                  <MUILink
+                    component="button"
+                    type="button"
+                    onClick={() => nav('/register')}
+                    underline="hover"
+                  >
+                    Create one
+                  </MUILink>
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </Container>
+    </Box>
   );
 }

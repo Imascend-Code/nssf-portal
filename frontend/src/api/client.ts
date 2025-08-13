@@ -2,8 +2,10 @@
 import axios from "axios";
 import { useAuthStore } from "../store/auth";
 
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api/v1";
+
 export const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api/v1", //import.meta.env.VITE_API_URL, // e.g. http://127.0.0.1:8000/api/v1
+  baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -11,7 +13,8 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers = config.headers || {};
+    (config.headers as any).Authorization = `Bearer ${token}`;
   }
   return config;
 });
@@ -24,30 +27,37 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const { refreshToken, setTokens, logout } = useAuthStore.getState();
-    const original = error.config;
+    const original = error.config || {};
+    const status = error?.response?.status;
 
-    if (error?.response?.status === 401 && !original._retry && refreshToken) {
+    // do not try to refresh if no refresh token, or if this is the refresh endpoint
+    const isRefreshCall = String(original?.url || "").includes("/auth/refresh/");
+
+    if (status === 401 && !original._retry && refreshToken && !isRefreshCall) {
       if (refreshing) {
         return new Promise((resolve, reject) => {
           queue.push((t) => {
             if (!t) return reject(error);
+            original.headers = original.headers || {};
             original.headers.Authorization = `Bearer ${t}`;
             resolve(api(original));
           });
         });
       }
+
       original._retry = true;
       refreshing = true;
+
       try {
-        const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL}/auth/refresh/`,
-          { refresh: refreshToken },
-          { headers: { "Content-Type": "application/json" } }
-        );
+        // use the same axios instance so baseURL is consistent
+        const { data } = await api.post("/auth/refresh/", { refresh: refreshToken });
         const newAccess = data?.access;
         setTokens({ access: newAccess, refresh: refreshToken });
+
         queue.forEach((fn) => fn(newAccess));
         queue = [];
+
+        original.headers = original.headers || {};
         original.headers.Authorization = `Bearer ${newAccess}`;
         return api(original);
       } catch {

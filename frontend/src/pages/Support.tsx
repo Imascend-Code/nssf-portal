@@ -1,75 +1,115 @@
-// src/pages/Support.tsx
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Phone, Mail, HelpCircle } from "lucide-react"
-import { Link } from "react-router-dom"
+import * as React from "react";
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  CardHeader,
+  Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  TextField,
+  Button,
+  Stack,
+  Link as MUILink,
+} from "@mui/material";
+
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
+import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 
 export default function Support() {
   return (
-    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
-      <header className="text-center space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Support</h1>
-        <p className="text-muted-foreground">We’re here to help with your account and requests.</p>
-      </header>
+    <Box sx={{ py: { xs: 4, md: 8 } }}>
+      <Container maxWidth="lg">
+        <Stack spacing={1} alignItems="center" textAlign="center" sx={{ mb: 4 }}>
+          <SupportAgentIcon color="primary" sx={{ fontSize: 36 }} />
+          <Typography variant="h4" fontWeight={800}>
+            Support
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 720 }}>
+            Find answers to common questions or reach out to our support team.
+          </Typography>
+        </Stack>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        {/* Self-help */}
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <HelpCircle className="h-5 w-5 text-primary" />
-              <CardTitle>Self-help</CardTitle>
-            </div>
-            <CardDescription>Find answers to common questions.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-              <li>First-time login and account setup</li>
-              <li>Updating bank details and beneficiaries</li>
-              <li>Understanding payment schedules</li>
-            </ul>
-            <Button variant="outline" asChild>
-              <Link to="/features">Browse Features</Link>
-            </Button>
+        <Grid container spacing={3}>
+          {/* FAQ */}
+          <Grid item xs={12} md={7}>
+            <Card variant="outlined">
+              <CardHeader title="Frequently Asked Questions" />
+              <CardContent>
+                <FaqItem q="How do I reset my password?">
+                  Go to the sign-in page and choose <strong>Forgot password</strong>. You’ll receive an email
+                  with a secure link to reset it.
+                </FaqItem>
+                <FaqItem q="Where can I see my payment history?">
+                  Navigate to <strong>Payments</strong> to see status, history and download statements.
+                </FaqItem>
+                <FaqItem q="How do I update my beneficiaries?">
+                  Open <strong>Profile & Beneficiaries</strong>, edit the relevant section and save changes.
+                </FaqItem>
+                <FaqItem q="Is my data secure?">
+                  Yes. We use strong encryption, access controls, and privacy-by-design practices.
+                </FaqItem>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Contact */}
+          <Grid item xs={12} md={5}>
+            <Card variant="outlined" sx={{ height: "100%" }}>
+              <CardHeader title="Contact us" />
+              <CardContent>
+                <Stack spacing={2}>
+                  <TextField label="Your email" type="email" fullWidth />
+                  <TextField label="Subject" fullWidth />
+                  <TextField label="Message" fullWidth multiline minRows={4} />
+                  <Button variant="contained" startIcon={<MarkEmailReadIcon />}>
+                    Send message
+                  </Button>
+                  <Typography variant="caption" color="text.secondary">
+                    For sensitive account changes, we may verify your identity for your protection.
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Security note */}
+        <Card variant="outlined" sx={{ mt: 3 }}>
+          <CardContent>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+              <ShieldOutlinedIcon color="primary" />
+              <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                Beware of phishing. We will never ask for your password by email. Always check the website domain and
+                contact us via the official channels listed here. Learn more at{" "}
+                <MUILink href="#" underline="hover">
+                  Security best practices
+                </MUILink>.
+              </Typography>
+            </Stack>
           </CardContent>
         </Card>
+      </Container>
+    </Box>
+  );
+}
 
-        {/* Contact */}
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              <CardTitle>Contact us</CardTitle>
-            </div>
-            <CardDescription>Get in touch with our help desk.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>Phone: 0800 123 456 (toll-free)</p>
-              <p>Email: support@nssf.example</p>
-            </div>
-            <Button>
-              <Mail className="h-4 w-4 mr-2" /> Send an Email
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Separator />
-
-      {/* CTA */}
-      <Card className="rounded-2xl">
-        <CardContent className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <div className="font-semibold">Need official documentation?</div>
-            <p className="text-sm text-muted-foreground">Generate a statement for any date range.</p>
-          </div>
-          <Button asChild>
-            <Link to="/payments">Open Payments</Link>
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
+function FaqItem({ q, children }: { q: string; children: React.ReactNode }) {
+  return (
+    <Accordion disableGutters>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Typography variant="subtitle2">{q}</Typography>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Typography variant="body2" color="text.secondary">
+          {children}
+        </Typography>
+      </AccordionDetails>
+    </Accordion>
+  );
 }

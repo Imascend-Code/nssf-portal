@@ -1,129 +1,221 @@
 // src/pages/Home.tsx
-import { Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { ShieldCheck, CreditCard, FileText, Users, HelpCircle, ArrowRight } from "lucide-react"
+import * as React from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardHeader,
+  CardContent,
+  Chip,
+  Stack,
+  Avatar,
+  Paper,
+  Divider,
+  useTheme,
+  alpha,
+} from '@mui/material';
+
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import GroupsIcon from '@mui/icons-material/Groups';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import DescriptionIcon from '@mui/icons-material/Description';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import InsightsIcon from '@mui/icons-material/Insights';
+import DevicesIcon from '@mui/icons-material/Devices';
+
+type Feature = {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+};
+
+const featureCards: Feature[] = [
+  { icon: <GroupsIcon />, title: 'Profile & Beneficiaries', desc: 'Keep your details up to date securely.' },
+  { icon: <CreditCardIcon />, title: 'Payments', desc: 'See history, statuses, and statements.' },
+  { icon: <DescriptionIcon />, title: 'Service Requests', desc: 'Submit, track, and download responses.' },
+  { icon: <LockOutlinedIcon />, title: 'Security', desc: 'MFA-ready, privacy by design.' },
+];
 
 export default function Home() {
-  const features = [
-    {
-      title: "Payments",
-      description: "View contributions and download statements anytime.",
-      icon: CreditCard,
-      link: "/payments",
-    },
-    {
-      title: "Requests",
-      description: "Submit and track your service requests with ease.",
-      icon: FileText,
-      link: "/requests",
-    },
-    {
-      title: "Beneficiaries",
-      description: "Manage and update your beneficiaries securely.",
-      icon: Users,
-      link: "/profile",
-    },
-    {
-      title: "Support",
-      description: "Find answers or contact our support team.",
-      icon: HelpCircle,
-      link: "/support",
-    },
-  ]
+  const nav = useNavigate();
+  const theme = useTheme();
 
-  const stats = [
-    { kpi: "98%", label: "Member Satisfaction" },
-    { kpi: "24h", label: "Avg. Response Time" },
-    { kpi: "10M+", label: "Secure Transactions" },
-  ]
+  const bgLight = 'linear-gradient(135deg, rgba(76,175,80,0.06), rgba(255,152,0,0.06))';
+  const bgDark = 'linear-gradient(135deg, rgba(76,175,80,0.12), rgba(255,152,0,0.12))';
 
   return (
-    <div className="min-h-[calc(100vh-140px)]">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background">
-        <div className="container max-w-6xl mx-auto px-4 py-16 sm:py-20">
-          <div className="mx-auto max-w-3xl text-center space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              Your financial security is our priority
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-              Welcome to the NSSF Member Portal
-            </h1>
-            <p className="text-muted-foreground">
-              Manage your social security contributions with our secure, intuitive platform designed for your
-              convenience.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <Button size="lg" asChild className="w-full sm:w-auto">
-                <Link to="/dashboard">
-                  Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
-                <Link to="/profile">Update Profile</Link>
-              </Button>
-            </div>
-          </div>
+    <Box
+      sx={{
+        minHeight: '100dvh',
+        bgcolor: 'background.default',
+        backgroundImage: theme.palette.mode === 'light' ? bgLight : bgDark,
+      }}
+    >
+      {/* HERO (upgraded) */}
+      <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative blobs */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: -120,
+            background: `radial-gradient(600px 300px at 10% -10%, ${alpha(theme.palette.primary.main, 0.25)}, transparent 70%),
+                         radial-gradient(500px 250px at 110% 20%, ${alpha(theme.palette.warning.main, 0.18)}, transparent 70%)`,
+            filter: 'blur(40px)',
+            pointerEvents: 'none',
+          }}
+        />
+        <Container sx={{ position: 'relative', py: { xs: 6, md: 10 } }}>
+          <Grid container spacing={4} alignItems="center">
+            {/* Left: Copy */}
+            <Grid item xs={12} md={7}>
+              <Stack spacing={2.5} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                <Stack direction="row" spacing={1.5} justifyContent={{ xs: 'center', md: 'flex-start' }} alignItems="center">
+                  <ShieldOutlinedIcon color="primary" sx={{ fontSize: 40 }} />
+                  <Chip label="Official NSSF Portal" variant="outlined" />
+                </Stack>
 
-          {/* KPI cards */}
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            {stats.map((s, i) => (
-              <Card key={i} className="rounded-2xl">
-                <CardContent className="py-6 text-center">
-                  <div className="text-3xl font-bold">{s.kpi}</div>
-                  <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
-                </CardContent>
+                <Typography
+                  component="h1"
+                  sx={{
+                    fontWeight: 900,
+                    lineHeight: 1.1,
+                    letterSpacing: { xs: -0.5, md: -0.8 },
+                    fontSize: { xs: 34, sm: 44, md: 52 },
+                  }}
+                >
+                  Manage your pension <Box component="span" sx={{ color: 'primary.main' }}>with confidence</Box>
+                </Typography>
+
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ maxWidth: 680, mx: { xs: 'auto', md: 0 } }}
+                >
+                  Securely access payments, requests, and your profile — anywhere, on any device.
+                </Typography>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent={{ xs: 'center', md: 'flex-start' }}>
+                  <Button size="large" variant="contained" onClick={() => nav('/login')}>
+                    Access your account
+                  </Button>
+                  <Button size="large" variant="outlined" onClick={() => nav('/features')}>
+                    Explore features
+                  </Button>
+                </Stack>
+
+                {/* Trust chips */}
+                <Stack direction="row" spacing={1} justifyContent={{ xs: 'center', md: 'flex-start' }} flexWrap="wrap">
+                  {['ISO-aligned', 'WCAG AA', 'Data privacy'].map((label) => (
+                    <Chip
+                      key={label}
+                      variant="outlined"
+                      icon={<CheckCircleOutlineIcon />}
+                      label={label}
+                      sx={{ '& .MuiChip-icon': { color: 'primary.main' } }}
+                    />
+                  ))}
+                </Stack>
+              </Stack>
+            </Grid>
+
+            {/* Right: Visual panel */}
+            <Grid item xs={12} md={5}>
+              <Paper
+                elevation={6}
+                sx={{
+                  borderRadius: 3,
+                  p: 3,
+                  bgcolor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Stack spacing={2}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <VerifiedUserIcon color="primary" />
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      Secure by design
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Multi-factor ready, session protection, and encrypted transport for your data.
+                  </Typography>
+                  <Divider />
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', width: 40, height: 40 }}>
+                      <DevicesIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>Access anywhere</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Desktop • Mobile • Tablet
+                      </Typography>
+                    </Box>
+                  </Stack>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar sx={{ bgcolor: 'warning.main', color: 'warning.contrastText', width: 40, height: 40 }}>
+                      <InsightsIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>Real-time status</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Requests and payments, always up to date
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Stack>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* Features */}
+      <Container sx={{ pb: { xs: 6, md: 10 } }}>
+        <Grid container spacing={3}>
+          {featureCards.map(({ icon, title, desc }) => (
+            <Grid item xs={12} sm={6} lg={3} key={title}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%',
+                  transition: 'box-shadow .2s, transform .2s',
+                  '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
+                }}
+              >
+                <CardHeader
+                  avatar={
+                    <Avatar
+                      sx={{
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        width: 40,
+                        height: 40,
+                      }}
+                    >
+                      <Box sx={{ '& svg': { fontSize: 22 } }}>{icon}</Box>
+                    </Avatar>
+                  }
+                  title={<Typography variant="subtitle1">{title}</Typography>}
+                  subheader={
+                    <Typography variant="body2" color="text.secondary">
+                      {desc}
+                    </Typography>
+                  }
+                />
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Quick access */}
-      <section className="container max-w-6xl mx-auto px-4 py-12 sm:py-16">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-semibold">Quick Access</h2>
-          <p className="text-muted-foreground mt-1">
-            Everything you need to manage your social security, all in one place
-          </p>
-        </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((f, i) => (
-            <Card key={i} className="hover:shadow-md transition-shadow rounded-2xl">
-              <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                <f.icon className="h-6 w-6 text-primary" />
-                <CardTitle className="text-base">{f.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <CardDescription>{f.description}</CardDescription>
-                <Button asChild variant="ghost" className="px-0 h-auto">
-                  <Link to={f.link} className="inline-flex items-center gap-1 font-medium">
-                    Get started <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+            </Grid>
           ))}
-        </div>
+        </Grid>
+      </Container>
 
-        <Separator className="my-12" />
-
-        {/* CTA banner */}
-        <Card className="rounded-2xl">
-          <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
-            <div>
-              <div className="text-lg font-semibold">Ready to make a request?</div>
-              <p className="text-sm text-muted-foreground">Create a new service request in a few clicks.</p>
-            </div>
-            <Button asChild>
-              <Link to="/requests/new">New Request</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
-  )
+      
+    </Box>
+  );
 }

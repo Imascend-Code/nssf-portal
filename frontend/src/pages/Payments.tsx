@@ -1,73 +1,158 @@
 // src/pages/Payments.tsx
-import { usePayments } from "@/api/hooks"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Loader2, Download } from "lucide-react"
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/api/client";
+
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardHeader,
+  CardContent,
+  Button,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+  CircularProgress,
+  Stack,
+  Alert,
+  Chip,
+} from "@mui/material";
+import GetAppIcon from "@mui/icons-material/GetApp";
+
+type Payment = {
+  id: number;
+  period_start: string;
+  period_end: string;
+  amount: string | number;
+  status: "processed" | "pending" | "on_hold" | string;
+  paid_at?: string | null;
+  reference: string | null;
+};
+
+function StatusChip({ status }: { status: string }) {
+  const s = (status || "").toLowerCase();
+  let color: "default" | "success" | "warning" | "error" = "default";
+  if (["processed", "success", "completed"].includes(s)) color = "success";
+  else if (["pending", "in_progress", "queued", "on_hold"].includes(s)) color = "warning";
+  else if (["rejected", "failed", "error"].includes(s)) color = "error";
+  return (
+    <Chip
+      label={status}
+      color={color}
+      size="small"
+      variant="outlined"
+      sx={{ textTransform: "capitalize" }}
+    />
+  );
+}
 
 export default function Payments() {
-  const { data: payments, isLoading } = usePayments()
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["payments"],
+    queryFn: async () => (await api.get<{ results?: Payment[] } | Payment[]>("/payments/")).data,
+    staleTime: 60_000,
+  });
+
+  const items: Payment[] = Array.isArray(data) ? data : data?.results ?? [];
+
+  const fmtUGX = (n: number | string) =>
+    new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX" }).format(Number(n));
+
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString();
+
+  const handleDownloadStatement = async () => {
+    // Uses axios instance so Authorization header is sent
+    const resp = await api.get("/documents/statement/", { responseType: "blob" });
+    const blob = new Blob([resp.data], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "statement.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Payments</h1>
-          <p className="text-muted-foreground text-sm mt-1">Review your payment history and statuses.</p>
-        </div>
-        <Button variant="outline" onClick={() => (window.location.href = "/documents/statement")}>
-          <Download className="h-4 w-4 mr-2" />
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 2 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>
+            My Payments
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Review your payment history and statuses.
+          </Typography>
+        </Box>
+        <Button variant="outlined" startIcon={<GetAppIcon />} onClick={handleDownloadStatement}>
           Download Statement
         </Button>
-      </div>
+      </Stack>
 
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle>Payment History</CardTitle>
-          <CardDescription>All your past and recent transactions.</CardDescription>
-        </CardHeader>
+      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <CardHeader
+          title={<Typography variant="h6">Payment History</Typography>}
+          subheader={
+            <Typography variant="body2" color="text.secondary">
+              All your past and recent transactions.
+            </Typography>
+          }
+        />
         <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center p-6">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : payments && payments.length ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+          {isLoading && (
+            <Stack alignItems="center" justifyContent="center" sx={{ py: 4 }}>
+              <CircularProgress size={28} />
+            </Stack>
+          )}
+
+          {isError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              Failed to load payments{(error as any)?.message ? ` — ${(error as any).message}` : ""}.
+            </Alert>
+          )}
+
+          {!isLoading && !isError && items.length === 0 && (
+            <Typography variant="body2" color="text.secondary">
+              No payments found.
+            </Typography>
+          )}
+
+          {!isLoading && !isError && items.length > 0 && (
+            <TableContainer sx={{ borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead>
                   <TableRow>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Reference</TableHead>
+                    <TableCell>Period</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Reference</TableCell>
                   </TableRow>
-                </TableHeader>
+                </TableHead>
                 <TableBody>
-                  {payments.map((p: any) => (
-                    <TableRow key={p.id}>
+                  {items.map((p) => (
+                    <TableRow key={p.id} hover>
                       <TableCell>
-                        {p.period_start} – {p.period_end}
+                        {fmtDate(p.period_start)} – {fmtDate(p.period_end)}
                       </TableCell>
+                      <TableCell>{fmtUGX(p.amount)}</TableCell>
                       <TableCell>
-                        {new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX" }).format(p.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={p.status === "processed" ? "default" : p.status === "pending" ? "secondary" : "destructive"}>
-                          {p.status}
-                        </Badge>
+                        <StatusChip status={p.status} />
                       </TableCell>
                       <TableCell>{p.reference || "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No payments found.</p>
+            </TableContainer>
           )}
         </CardContent>
       </Card>
-    </div>
-  )
+    </Container>
+  );
 }

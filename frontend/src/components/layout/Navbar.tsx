@@ -1,256 +1,265 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/store/auth";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { Link as RouterLink, NavLink, useNavigate } from 'react-router-dom';
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
-  DropdownMenuGroup
-} from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Menu, ChevronDown, Bell, LifeBuoy } from "lucide-react";
-import { useMemo } from "react";
-import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
+  AppBar, Toolbar, IconButton, Button, Box, Stack, Typography, Avatar,
+  Menu, MenuItem, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText,
+  useMediaQuery, useTheme, Tooltip, Container
+} from '@mui/material';
 
-type Item = { to: string; label: string; roles?: Array<"PENSIONER" | "STAFF" | "ADMIN" | "*">; badge?: string };
+import SecurityIcon from '@mui/icons-material/Security';
+import MenuIcon from '@mui/icons-material/Menu';
+import LogoutIcon from '@mui/icons-material/Logout';
+import PersonIcon from '@mui/icons-material/Person';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import LockIcon from '@mui/icons-material/Lock';
+import PaymentsIcon from '@mui/icons-material/Payments';
+import RequestPageIcon from '@mui/icons-material/RequestPage';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
-const baseItems: Item[] = [
-  { to: "/payments", label: "Payments", roles: ["PENSIONER", "ADMIN", "STAFF"] },
-  { to: "/requests", label: "Requests", roles: ["PENSIONER", "ADMIN", "STAFF"], badge: "New" },
-  { to: "/profile", label: "Profile", roles: ["PENSIONER", "ADMIN", "STAFF"] },
+import ThemeToggle from '../ui/ThemeToggle';
+import { useAuthStore } from '@/store/auth';
+
+type NavItem = { to: string; label: string; icon?: React.ReactNode };
+const NAV_ITEMS: NavItem[] = [
+  { to: '/features', label: 'Features', icon: <SecurityIcon fontSize="small" /> },
+  { to: '/payments', label: 'Payments', icon: <PaymentsIcon fontSize="small" /> },
+  { to: '/requests', label: 'Requests', icon: <RequestPageIcon fontSize="small" /> },
+  { to: '/support', label: 'Support', icon: <HelpOutlineIcon fontSize="small" /> },
 ];
 
-const staffItems: Item[] = [
-  { to: "/admin/requests", label: "Requests Queue", roles: ["STAFF", "ADMIN"], badge: "Staff" },
-];
-
-const adminItems: Item[] = [
-  { to: "/admin", label: "Dashboard", roles: ["ADMIN"] },
-  { to: "/admin/users", label: "User Management", roles: ["ADMIN"] },
-  { to: "/admin/reports", label: "Reports", roles: ["ADMIN"] },
-];
-
-function Brand() {
-  return (
-    <Link to="/" className="flex items-center gap-2">
-      <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary to-blue-600 flex items-center justify-center text-white font-bold">N</div>
-      <span className="hidden sm:inline text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-        NSSF Portal
-      </span>
-    </Link>
-  );
-}
-
-function TopNavLinks({ items }: { items: Item[] }) {
-  return (
-    <nav className="hidden md:flex items-center gap-1">
-      {items.map((i) => (
-        <NavLink
-          key={i.to}
-          to={i.to}
-          className={({ isActive }) =>
-            [
-              "px-3 py-2 rounded-md text-sm font-medium relative group",
-              isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-            ].join(" ")
-          }
-        >
-          {i.label}
-          {i.badge && (
-            <Badge variant="secondary" className="ml-2 text-xs">
-              {i.badge}
-            </Badge>
-          )}
-          <span className={`
-            absolute left-1/2 -bottom-1 w-0 h-0.5 bg-primary 
-            transition-all duration-300 group-hover:w-4/5 
-            ${isActive ? "w-4/5" : ""} 
-            transform -translate-x-1/2
-          `} />
-        </NavLink>
-      ))}
-    </nav>
-  );
-}
-
-function MobileNav({ items }: { items: Item[] }) {
-  return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="md:hidden">
-          <Menu className="h-5 w-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-72 px-0">
-        <div className="px-4 py-4">
-          <Brand />
-        </div>
-        <Separator className="my-2" />
-        <div className="grid gap-1 px-2">
-          {items.map((i) => (
-            <NavLink
-              key={i.to}
-              to={i.to}
-              className={({ isActive }) =>
-                [
-                  "px-4 py-3 rounded-md text-sm font-medium flex items-center justify-between",
-                  isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                ].join(" ")
-              }
-            >
-              <span>{i.label}</span>
-              {i.badge && (
-                <Badge variant="secondary" className="text-xs">
-                  {i.badge}
-                </Badge>
-              )}
-            </NavLink>
-          ))}
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-          <Button variant="outline" className="w-full" asChild>
-            <Link to="/support" className="flex items-center gap-2">
-              <LifeBuoy className="h-4 w-4" />
-              Support Center
-            </Link>
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
+// MUI Button + NavLink with active styling
+const NavLinkButton = ({ to, children }: { to: string; children: React.ReactNode }) => (
+  <Button
+    component={NavLink}
+    to={to}
+    disableElevation
+    sx={{
+      px: 1.5,
+      py: 0.75,
+      borderRadius: 1.5,
+      typography: 'body2',
+      // style prop goes to NavLink (receives isActive)
+      style: ({ isActive }: { isActive: boolean }) => ({
+        backgroundColor: isActive ? 'rgba(0,0,0,0.08)' : 'transparent',
+      }),
+      color: 'text.secondary',
+      '&.active, &:hover': { color: 'text.primary' },
+    }}
+  >
+    {children}
+  </Button>
+);
 
 export default function Navbar() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const role = user?.role ?? null;
   const logout = useAuthStore((s) => s.logout);
-  const nav = useNavigate();
 
-  const items = useMemo(() => {
-    let all = [...baseItems];
-    if (role === "STAFF") all = [...all, ...staffItems];
-    if (role === "ADMIN") all = [...all, ...staffItems, ...adminItems];
-    return all.filter((i) => !i.roles || i.roles.includes("*") || (role && i.roles.includes(role)));
-  }, [role]);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+
+  // User menu
+  const [menuEl, setMenuEl] = React.useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(menuEl);
+  const handleAvatarClick = (e: React.MouseEvent<HTMLElement>) => setMenuEl(e.currentTarget);
+  const closeMenu = () => setMenuEl(null);
+
+  // Mobile drawer
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+
+  const initials = (user?.full_name || user?.email || 'NA').slice(0, 2).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <MobileNav items={items} />
-        <div className="md:flex"><Brand /></div>
-        <div className="flex-1" />
-        <TopNavLinks items={items} />
-        <div className="flex items-center gap-3">
-          {!user ? (
-            <>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/login">Sign in</Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link to="/register">Get Started</Link>
-              </Button>
-            </>
-          ) : (
-            <>
-              <button className="relative p-2 rounded-full hover:bg-accent">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-              </button>
+    <AppBar
+      position="sticky"
+      elevation={0}
+      sx={{
+        backdropFilter: 'blur(8px)',
+        backgroundColor: (t) =>
+          t.palette.mode === 'light'
+            ? 'rgba(255,255,255,0.7)'
+            : 'rgba(10,37,64,0.7)',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      <Container maxWidth="lg">
+        <Toolbar disableGutters sx={{ minHeight: 64, gap: 1 }}>
+          {/* Brand */}
+          <Button
+            component={RouterLink}
+            to="/"
+            color="inherit"
+            startIcon={<SecurityIcon />}
+            sx={{ fontWeight: 600, letterSpacing: 0.2 }}
+          >
+            NSSF Pensioner
+          </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-full hover:bg-accent p-1 pr-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} />
-                      <AvatarFallback>
-                        {(user.full_name || user.email || "U").slice(0, 1).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="hidden text-left text-sm leading-tight md:block">
-                      <div className="font-medium line-clamp-1 max-w-[120px]">
-                        {user.full_name || user.email}
-                      </div>
-                      <div className="text-xs text-muted-foreground capitalize">{user.role?.toLowerCase()}</div>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user.full_name || user.email}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground capitalize">
-                        {user.role?.toLowerCase()}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile" className="w-full">
-                        Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/requests" className="w-full">
-                        My Requests
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/settings" className="w-full">
-                        Settings
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  {role === "STAFF" && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel>Staff</DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/requests" className="w-full">
-                          Requests Queue
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  {role === "ADMIN" && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel>Admin</DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="w-full">
-                          Dashboard
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/users" className="w-full">
-                          User Management
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/reports" className="w-full">
-                          Reports
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    onClick={() => { logout(); nav("/", { replace: true }); }}
-                  >
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
+          {/* Desktop nav */}
+          {isDesktop && (
+            <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
+              {NAV_ITEMS.map((item) => (
+                <NavLinkButton key={item.to} to={item.to}>
+                  {item.label}
+                </NavLinkButton>
+              ))}
+            </Stack>
           )}
-        </div>
-      </div>
-    </header>
+
+          <Box sx={{ flex: 1 }} />
+
+          {/* Right side */}
+          {isDesktop ? (
+            <Stack direction="row" spacing={1} alignItems="center">
+              {user ? (
+                <>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => navigate('/dashboard')}
+                    startIcon={<DashboardIcon />}
+                  >
+                    Dashboard
+                  </Button>
+
+                  <Tooltip title={user.full_name || user.email}>
+                    <IconButton onClick={handleAvatarClick} size="small" aria-label="account menu">
+                      <Avatar sx={{ width: 32, height: 32 }}>{initials}</Avatar>
+                    </IconButton>
+                  </Tooltip>
+
+                  <Menu
+                    anchorEl={menuEl}
+                    open={menuOpen}
+                    onClose={closeMenu}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        closeMenu();
+                        navigate('/profile');
+                      }}
+                    >
+                      <ListItemIcon>
+                        <PersonIcon fontSize="small" />
+                      </ListItemIcon>
+                      Profile
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        closeMenu();
+                        navigate('/dashboard');
+                      }}
+                    >
+                      <ListItemIcon>
+                        <DashboardIcon fontSize="small" />
+                      </ListItemIcon>
+                      Dashboard
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem
+                      onClick={() => {
+                        closeMenu();
+                        logout();
+                        navigate('/auth');
+                      }}
+                      sx={{ color: 'error.main' }}
+                    >
+                      <ListItemIcon sx={{ color: 'error.main' }}>
+                        <LogoutIcon fontSize="small" />
+                      </ListItemIcon>
+                      Sign out
+                    </MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => navigate('/login')}
+                  startIcon={<LockIcon />}
+                >
+                  Sign in
+                </Button>
+              )}
+
+              {/* Theme toggle */}
+              <ThemeToggle />
+            </Stack>
+          ) : (
+            // Mobile: hamburger + theme toggle
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <ThemeToggle />
+              <IconButton onClick={() => setDrawerOpen(true)} aria-label="open menu">
+                <MenuIcon />
+              </IconButton>
+            </Stack>
+          )}
+        </Toolbar>
+      </Container>
+
+      {/* Mobile drawer */}
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <Box sx={{ width: 280, p: 1 }}>
+          <Box sx={{ px: 2, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <SecurityIcon color="primary" />
+            <Typography variant="h6">NSSF Pensioner</Typography>
+          </Box>
+          <Divider />
+
+          <List sx={{ pt: 0 }}>
+            {NAV_ITEMS.map((item) => (
+              <ListItemButton
+                key={item.to}
+                component={NavLink}
+                to={item.to}
+                onClick={() => setDrawerOpen(false)}
+                // style get isActive
+                style={({ isActive }: { isActive: boolean }) => ({
+                  background: isActive ? 'rgba(0,0,0,0.06)' : 'transparent',
+                })}
+              >
+                {item.icon && <ListItemIcon>{item.icon}</ListItemIcon>}
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            ))}
+          </List>
+
+          <Divider sx={{ my: 1 }} />
+
+          <Box sx={{ px: 2, py: 1 }}>
+            {user ? (
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<DashboardIcon />}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  navigate('/dashboard');
+                }}
+                sx={{ mb: 1 }}
+              >
+                Dashboard
+              </Button>
+            ) : (
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<LockIcon />}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  navigate('/login');
+                }}
+                sx={{ mb: 1 }}
+              >
+                Sign in
+              </Button>
+            )}
+          </Box>
+        </Box>
+      </Drawer>
+    </AppBar>
   );
 }
