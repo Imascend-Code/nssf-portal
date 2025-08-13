@@ -31,6 +31,10 @@ SECRET_KEY = env("SECRET_KEY") or get_random_secret_key()   # fallback in dev
 DEBUG = env.bool("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
+CORS_ORIGIN = env.str("CORS_ORIGIN")
+CORS_ALLOWED_ORIGINS = env.list("CORS_ORIGINS", default=["http://localhost:5173","http://127.0.0.1:5173"])
+
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",

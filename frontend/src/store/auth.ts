@@ -3,13 +3,20 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type Role = "PENSIONER" | "STAFF" | "ADMIN";
-export type User = { id: number; email: string; role: Role; full_name?: string; phone?: string };
+export type User = {
+  id: number;
+  email: string;
+  role: Role;
+  full_name?: string;
+  phone?: string;
+};
 
 type State = {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
 };
+
 type Actions = {
   setUser: (u: User | null) => void;
   setTokens: (t: { access: string | null; refresh: string | null }) => void;

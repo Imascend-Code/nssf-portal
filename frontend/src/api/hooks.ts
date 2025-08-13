@@ -1,7 +1,9 @@
 // src/api/hooks.ts
-import { useMutation, useQuery } from "@tanstack/react-query";
+
+import { useAuthStore } from "../store/auth";
+import type { User } from "../store/auth"; 
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import { useAuthStore, User } from "../store/auth";
 
 // Auth
 export function useLogin() {
@@ -93,5 +95,58 @@ export function useReport() {
   return useQuery({
     queryKey: ["report-summary"],
     queryFn: async () => (await api.get("/reports/summary/")).data,
+  });
+}
+
+
+// 1) My Profile
+export function useProfile() {
+  return useQuery({
+    queryKey: ["profile", "me"],
+    queryFn: async () => (await api.get("/profiles/me/")).data,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// 2) Update Profile (PATCH /profiles/me/)
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      address?: string;
+      city?: string;
+      bank_name?: string;
+      bank_account?: string;
+      // you can include other editable fields you support
+    }) => (await api.patch("/profiles/me/", payload)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["profile", "me"] });
+    },
+  });
+}
+
+// 3) List my beneficiaries
+export function useBeneficiaries(params?: Record<string, any>) {
+  return useQuery({
+    queryKey: ["beneficiaries", params],
+    queryFn: async () => (await api.get("/profiles/me/beneficiaries/", { params })).data,
+  });
+}
+
+// 4) Add a beneficiary (POST /profiles/me/beneficiaries/)
+export function useAddBeneficiary() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      full_name: string;
+      relationship: string;
+      percentage: number;
+      phone?: string;
+      national_id?: string;
+    }) => (await api.post("/profiles/me/beneficiaries/", payload)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["beneficiaries"] });
+      qc.invalidateQueries({ queryKey: ["profile", "me"] }); // if server recalculates % or any summary
+    },
   });
 }

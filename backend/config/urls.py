@@ -41,11 +41,11 @@ urlpatterns = [
     # API v1
     path("api/v1/", include([
         path("", include(router.urls)),
+        path("", include(("accounts.urls", "accounts"), namespace="accounts")),   
         path("auth/login/", TokenObtainPairView.as_view(), name="jwt-login"),
         path("auth/refresh/", TokenRefreshView.as_view(), name="jwt-refresh"),
-        path("auth/", include((accounts_urls, "accounts"), namespace="accounts")),
-        path("reports/summary/", report_summary, name="report-summary"),
-        path("documents/statement/", statement_pdf, name="statement-pdf"),
+        path("reports/summary/", report_summary),
+        path("documents/statement/", statement_pdf),
     ])),
 ]
 
