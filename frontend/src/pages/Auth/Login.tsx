@@ -1,3 +1,4 @@
+// src/pages/Auth/Login.tsx
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,11 +18,15 @@ import {
   Container,
   CircularProgress,
   Link as MUILink,
+  Alert,
+  IconButton,
 } from '@mui/material';
 
 import SecurityIcon from '@mui/icons-material/Security';
 import MailIcon from '@mui/icons-material/Mail';
 import LockIcon from '@mui/icons-material/Lock';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { motion } from 'framer-motion';
 
 const schema = z.object({
@@ -34,13 +39,44 @@ export default function Login() {
   const { mutateAsync, isPending } = useLogin();
   const nav = useNavigate();
   const loc = useLocation() as any;
-  const returnTo = loc?.state?.returnTo || '/dashboard';
+  const returnTo: string | undefined = loc?.state?.returnTo;
+  const fallback = '/dashboard';
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const [apiError, setApiError] = React.useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  const onSubmit = async (values: FormData) => {
+    setApiError(null);
+    try {
+      // useLogin returns the "me" payload after storing tokens
+      const me: any = await mutateAsync(values);
+      const isAdmin = !!(me?.is_superuser || me?.is_staff || me?.role === 'ADMIN');
+      const target = isAdmin ? '/admin' : (returnTo || fallback);
+      nav(target, { replace: true });
+    } catch (err: any) {
+      // Common failure shapes: AxiosError with response.data
+      const status = err?.response?.status;
+      const detail =
+        err?.response?.data?.detail ||
+        err?.response?.data?.non_field_errors?.[0] ||
+        err?.message ||
+        'Login failed. Please try again.';
+
+      // Show a top banner + mark fields
+      setApiError(detail);
+      if (status === 400 || status === 401) {
+        setError('email', { type: 'server', message: 'Check your email or password' }, { shouldFocus: true });
+        setError('password', { type: 'server', message: 'Check your email or password' });
+      }
+    }
+  };
 
   return (
     <Box
@@ -53,14 +89,11 @@ export default function Login() {
           t.palette.mode === 'light'
             ? 'linear-gradient(135deg, rgba(76,175,80,0.06), rgba(255,152,0,0.06))'
             : 'linear-gradient(135deg, rgba(76,175,80,0.12), rgba(255,152,0,0.12))',
+        px: 2,
       }}
     >
       <Container maxWidth="sm">
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
           <Card elevation={6} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardHeader
               title={
@@ -78,15 +111,13 @@ export default function Login() {
               }
             />
             <CardContent sx={{ pt: 0 }}>
-              <Box
-                component="form"
-                noValidate
-                onSubmit={handleSubmit(async (values) => {
-                  await mutateAsync(values);
-                  nav(returnTo, { replace: true });
-                })}
-                sx={{ display: 'grid', gap: 2.5 }}
-              >
+              {apiError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {apiError}
+                </Alert>
+              )}
+
+              <Box component="form" noValidate onSubmit={handleSubmit(onSubmit)} sx={{ display: 'grid', gap: 2.5 }}>
                 <TextField
                   id="email"
                   label="Email address"
@@ -108,7 +139,7 @@ export default function Login() {
                 <TextField
                   id="password"
                   label="Password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   fullWidth
                   error={!!errors.password}
@@ -117,6 +148,17 @@ export default function Login() {
                     startAdornment: (
                       <InputAdornment position="start">
                         <LockIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          onClick={() => setShowPassword((s) => !s)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
                       </InputAdornment>
                     ),
                   }}
@@ -134,13 +176,7 @@ export default function Login() {
                   </Button>
                 </Box>
 
-                <Button
-                  type="submit"
-                  size="large"
-                  variant="contained"
-                  disabled={isPending}
-                  sx={{ mt: 0.5 }}
-                >
+                <Button type="submit" size="large" variant="contained" disabled={isPending} sx={{ mt: 0.5 }}>
                   {isPending ? (
                     <Box display="inline-flex" alignItems="center" gap={1}>
                       <CircularProgress size={18} thickness={5} />
@@ -153,12 +189,7 @@ export default function Login() {
 
                 <Typography variant="body2" color="text.secondary" textAlign="center">
                   Don&apos;t have an account?{' '}
-                  <MUILink
-                    component="button"
-                    type="button"
-                    onClick={() => nav('/register')}
-                    underline="hover"
-                  >
+                  <MUILink component="button" type="button" onClick={() => nav('/register')} underline="hover">
                     Create one
                   </MUILink>
                 </Typography>

@@ -1,6 +1,8 @@
 // src/pages/Dashboard.tsx
 import * as React from 'react';
 import { useProfile, usePayments, useMyRequests } from '@/api/hooks';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/client';
 
 import {
   Box,
@@ -27,22 +29,34 @@ import {
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupsIcon from '@mui/icons-material/Groups';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 function StatusChip({ status }: { status: string }) {
   const s = (status || '').toLowerCase();
   let color: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' = 'default';
-
-  // Map your domain statuses to chip colors
   if (['processed', 'resolved', 'closed', 'success', 'completed'].includes(s)) color = 'success';
   else if (['pending', 'in_progress', 'queued'].includes(s)) color = 'warning';
   else if (['rejected', 'failed', 'error'].includes(s)) color = 'error';
-  else color = 'default';
-
   return <Chip label={status} color={color} size="small" variant="outlined" sx={{ textTransform: 'capitalize' }} />;
 }
 
+const fmtUGX = (n: number | string) =>
+  new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', maximumFractionDigits: 0 }).format(
+    typeof n === 'string' ? Number(n) : n ?? 0
+  );
+
 export default function Dashboard() {
+  // Profile (beneficiaries, etc.)
   const { data: profile } = useProfile();
+
+  // NEW: Users/me for balance (read from /api/v1/users/me/)
+  const me = useQuery({
+    queryKey: ['users-me'],
+    queryFn: async () => (await api.get('/users/me/')).data as { full_name?: string; balance?: number | string },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Data
   const payments = usePayments({ page_size: 5 });
   const requests = useMyRequests({ page_size: 5 });
 
@@ -51,6 +65,7 @@ export default function Dashboard() {
   ).length;
 
   const kpis = [
+    { title: 'Balance', value: fmtUGX(me.data?.balance ?? 0), icon: <AccountBalanceWalletIcon /> },
     { title: 'Total Payments', value: payments.data?.length ?? 0, icon: <CreditCardIcon /> },
     { title: 'Pending Requests', value: pendingRequestsCount, icon: <DescriptionIcon /> },
     { title: 'Beneficiaries', value: profile?.beneficiaries_count ?? 0, icon: <GroupsIcon /> },
@@ -63,7 +78,7 @@ export default function Dashboard() {
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>
-          Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}!
+          Welcome back{(me.data?.full_name || profile?.full_name) ? `, ${me.data?.full_name ?? profile?.full_name}` : ''}!
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           Overview of your account activity and contributions.
@@ -73,7 +88,7 @@ export default function Dashboard() {
       {/* KPIs */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {kpis.map((k, i) => (
-          <Grid item xs={12} sm={6} lg={4} key={i}>
+          <Grid item xs={12} sm={6} lg={3} key={i}>
             <Card variant="outlined" sx={{ borderRadius: 3, height: '100%' }}>
               <CardHeader
                 title={<Typography variant="subtitle2">{k.title}</Typography>}
@@ -142,9 +157,7 @@ export default function Dashboard() {
                           <TableCell>
                             {p.period_start} – {p.period_end}
                           </TableCell>
-                          <TableCell>
-                            {new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX' }).format(p.amount)}
-                          </TableCell>
+                          <TableCell>{fmtUGX(p.amount)}</TableCell>
                           <TableCell>
                             <StatusChip status={p.status} />
                           </TableCell>

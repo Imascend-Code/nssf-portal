@@ -1,32 +1,59 @@
-import { useCategories, useCreateRequest, useUploadAttachment } from "@/api/hooks";
+import * as React from "react";
 import { useState, FormEvent } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from "@/components/ui/select";
+import {
+  Container,
+  Card,
+  CardHeader,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Grid,
+  Stack,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import { useCategories, useCreateRequest, useUploadAttachment } from "@/api/hooks";
 
 export default function NewRequest() {
   const cats = useCategories();
   const create = useCreateRequest();
+
   const [createdId, setCreatedId] = useState<number | undefined>();
-  const [file, setFile] = useState<File | undefined>();
+  const [file, setFile] = useState<File | null>(null);
+
   const upload = useUploadAttachment(createdId || 0);
 
-  if (cats.isLoading) return <div className="p-6">Loading…</div>;
+  const catsList: any[] = Array.isArray(cats.data) ? cats.data : cats.data?.results ?? [];
 
-  async function onSubmit(e: FormEvent) {
+  if (cats.isLoading) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 4 }}>
+        <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
+          <CircularProgress size={28} />
+        </Stack>
+      </Container>
+    );
+  }
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.target as HTMLFormElement);
+    const fd = new FormData(e.currentTarget);
     const payload = {
-      title: fd.get("title"),
-      description: fd.get("description"),
-      category: Number(fd.get("category")),
-      priority: fd.get("priority"),
+      title: String(fd.get("title") || ""),
+      description: String(fd.get("description") || ""),
+      category: Number(fd.get("category") || 0),
+      priority: String(fd.get("priority") || "normal"),
     } as any;
+
     const r = await create.mutateAsync(payload);
     setCreatedId(r.id);
+
     if (file) {
       const f = new FormData();
       f.set("file", file);
@@ -35,57 +62,94 @@ export default function NewRequest() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <Card>
-        <CardHeader><CardTitle>New Service Request</CardTitle></CardHeader>
+    <Container maxWidth="sm" sx={{ py: 4 }}>
+      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <CardHeader title={<Typography variant="h6">New Service Request</Typography>} />
         <CardContent>
-          <form onSubmit={onSubmit} className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              {/* Using native select to keep payload simple */}
-              <select name="category" id="category" className="w-full rounded-md border bg-background px-3 py-2">
-                {(cats.data?.results || cats.data || []).map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
+          <form onSubmit={onSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel id="category-label">Category</InputLabel>
+                  <Select
+                    labelId="category-label"
+                    label="Category"
+                    name="category"
+                    defaultValue={catsList[0]?.id ?? ""}
+                    required
+                  >
+                    {catsList.map((c: any) => (
+                      <MenuItem key={c.id} value={c.id}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" name="title" required />
-            </div>
+              <Grid item xs={12}>
+                <TextField name="title" label="Title" fullWidth required />
+              </Grid>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" rows={5} required />
-            </div>
+              <Grid item xs={12}>
+                <TextField
+                  name="description"
+                  label="Description"
+                  fullWidth
+                  multiline
+                  minRows={5}
+                  required
+                />
+              </Grid>
 
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select name="priority" defaultValue="normal">
-                <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel id="priority-label">Priority</InputLabel>
+                  <Select
+                    labelId="priority-label"
+                    label="Priority"
+                    name="priority"
+                    defaultValue="normal"
+                  >
+                    <MenuItem value="low">Low</MenuItem>
+                    <MenuItem value="normal">Normal</MenuItem>
+                    <MenuItem value="high">High</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
 
-            <div className="space-y-2">
-              <Label htmlFor="file">Attachment</Label>
-              <Input id="file" type="file" onChange={(e) => setFile(e.target.files?.[0])} />
-            </div>
+              <Grid item xs={12}>
+                <Button variant="outlined" component="label" fullWidth>
+                  {file ? `Selected: ${file.name}` : "Choose attachment"}
+                  <input
+                    type="file"
+                    hidden
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </Button>
+              </Grid>
 
-            <Button type="submit" disabled={create.isPending || upload.isPending}>
-              {create.isPending ? "Submitting…" : "Submit"}
-            </Button>
-            {createdId && <p className="text-sm text-green-600">Submitted with ID #{createdId}</p>}
+              <Grid item xs={12}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  disabled={create.isPending || upload.isPending}
+                  fullWidth
+                >
+                  {create.isPending ? "Submitting…" : "Submit"}
+                </Button>
+              </Grid>
+
+              {createdId && (
+                <Grid item xs={12}>
+                  <Alert severity="success">Submitted with ID #{createdId}</Alert>
+                </Grid>
+              )}
+            </Grid>
           </form>
         </CardContent>
       </Card>
-    </div>
+    </Container>
   );
 }

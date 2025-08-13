@@ -1,48 +1,103 @@
-import { Link } from "react-router-dom";
+import * as React from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { useMyRequests } from "@/api/hooks";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/StatusBadge";
+import {
+  Container,
+  Card,
+  CardHeader,
+  CardContent,
+  Typography,
+  Button,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+  Stack,
+  CircularProgress,
+  Alert,
+  Chip,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+
+function StatusChip({ value }: { value: string }) {
+  const s = (value || "").toLowerCase();
+  let color: "default" | "success" | "warning" | "error" = "default";
+  if (["resolved", "closed", "completed", "success"].includes(s)) color = "success";
+  else if (["pending", "in_progress", "queued"].includes(s)) color = "warning";
+  else if (["rejected", "failed", "error"].includes(s)) color = "error";
+  return <Chip size="small" variant="outlined" color={color} label={value} sx={{ textTransform: "capitalize" }} />;
+}
 
 export default function MyRequests() {
   const q = useMyRequests();
+  const items: any[] = Array.isArray(q.data) ? q.data : q.data?.results ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>My Requests</CardTitle>
-          <Button asChild><Link to="/requests/new">New request</Link></Button>
-        </CardHeader>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <CardHeader
+          title={<Typography variant="h6">My Requests</Typography>}
+          action={
+            <Button component={RouterLink} to="/requests/new" variant="contained" startIcon={<AddIcon />}>
+              New request
+            </Button>
+          }
+        />
         <CardContent>
-          {q.isLoading ? (
-            <p>Loading…</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(q.data?.results || []).map((r: any) => (
-                  <TableRow key={r.id}>
-                    <TableCell>
-                      <Link to={`/requests/${r.id}`} className="underline">{r.title}</Link>
-                    </TableCell>
-                    <TableCell><StatusBadge value={r.status} /></TableCell>
+          {q.isLoading && (
+            <Stack alignItems="center" justifyContent="center" sx={{ py: 4 }}>
+              <CircularProgress size={28} />
+            </Stack>
+          )}
+
+          {q.isError && <Alert severity="error">Failed to load your requests.</Alert>}
+
+          {!q.isLoading && !q.isError && (
+            <TableContainer sx={{ borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Title</TableCell>
+                    <TableCell>Status</TableCell>
                   </TableRow>
-                ))}
-                {(!q.data?.results || q.data.results.length === 0) && (
-                  <TableRow><TableCell colSpan={2} className="text-muted-foreground text-center">No requests yet.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {items.length > 0 ? (
+                    items.map((r: any) => (
+                      <TableRow key={r.id} hover>
+                        <TableCell>
+                          <Button
+                            component={RouterLink}
+                            to={`/requests/${r.id}`}
+                            variant="text"
+                            size="small"
+                            sx={{ textDecoration: "underline", px: 0 }}
+                          >
+                            {r.title}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <StatusChip value={r.status} />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2}>
+                        <Typography variant="body2" color="text.secondary" align="center">
+                          No requests yet.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </CardContent>
       </Card>
-    </div>
+    </Container>
   );
 }

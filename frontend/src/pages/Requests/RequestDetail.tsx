@@ -1,43 +1,109 @@
+import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { api } from "@/api/client";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import {
+  Container,
+  Card,
+  CardHeader,
+  CardContent,
+  Typography,
+  Stack,
+  Chip,
+  Divider,
+  Button,
+  CircularProgress,
+  Alert,
+  Link as MUILink,
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+
+function StatusChip({ value }: { value: string }) {
+  const s = (value || "").toLowerCase();
+  let color: "default" | "success" | "warning" | "error" = "default";
+  if (["resolved", "closed", "completed", "success"].includes(s)) color = "success";
+  else if (["pending", "in_progress", "queued"].includes(s)) color = "warning";
+  else if (["rejected", "failed", "error"].includes(s)) color = "error";
+  return <Chip size="small" variant="outlined" color={color} label={value} sx={{ textTransform: "capitalize" }} />;
+}
 
 export default function RequestDetail() {
   const { id } = useParams();
-  const q = useQuery({ queryKey: ["request", id], queryFn: async () => (await api.get(`/requests/${id}/`)).data });
+  const navigate = useNavigate();
 
-  if (q.isLoading) return <div className="p-6">Loading…</div>;
+  const q = useQuery({
+    queryKey: ["request", id],
+    queryFn: async () => (await api.get(`/requests/${id}/`)).data,
+    enabled: !!id,
+  });
+
+  if (q.isLoading) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
+          <CircularProgress size={28} />
+        </Stack>
+      </Container>
+    );
+  }
+
+  if (q.isError) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="error">Failed to load request.</Alert>
+      </Container>
+    );
+  }
+
   const r = q.data;
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>{r.title}</CardTitle>
-          <StatusBadge value={r.status} />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm text-muted-foreground">Priority: <span className="capitalize">{r.priority}</span></div>
-          <Separator />
-          <p className="whitespace-pre-line">{r.description}</p>
-          <Separator />
-          <div>
-            <h4 className="mb-2 font-semibold">Attachments</h4>
-            <ul className="list-inside list-disc space-y-1">
-              {(r.attachments || []).map((a: any) => (
-                <li key={a.id}><a href={a.file} target="_blank" className="underline">file</a></li>
-              ))}
-              {(!r.attachments || r.attachments.length === 0) && <li className="text-muted-foreground">No attachments</li>}
-            </ul>
-          </div>
-          {/* Optional: button to go back */}
-          <Button variant="outline" onClick={() => window.history.back()}>Back</Button>
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <CardHeader
+          title={
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="h6">{r.title}</Typography>
+              <StatusChip value={r.status} />
+            </Stack>
+          }
+        />
+        <CardContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Priority: <strong style={{ textTransform: "capitalize" }}>{r.priority}</strong>
+          </Typography>
+          <Divider sx={{ my: 1.5 }} />
+          <Typography variant="body1" sx={{ whiteSpace: "pre-line", mb: 2 }}>
+            {r.description}
+          </Typography>
+          <Divider sx={{ my: 1.5 }} />
+
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            Attachments
+          </Typography>
+          <Stack component="ul" sx={{ pl: 2, m: 0 }} spacing={0.5}>
+            {(r.attachments || []).length > 0 ? (
+              (r.attachments || []).map((a: any) => (
+                <li key={a.id}>
+                  <MUILink href={a.file} target="_blank" rel="noopener">
+                    file
+                  </MUILink>
+                </li>
+              ))
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No attachments
+              </Typography>
+            )}
+          </Stack>
+
+          <Stack direction="row" justifyContent="flex-start" sx={{ mt: 3 }}>
+            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
+              Back
+            </Button>
+          </Stack>
         </CardContent>
       </Card>
-    </div>
+    </Container>
   );
 }

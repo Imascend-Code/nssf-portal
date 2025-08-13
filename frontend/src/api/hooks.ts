@@ -59,6 +59,17 @@ export function useRegister() {
 }
 
 /** One-time fetch of the current user if a token exists but store has no user yet. */
+export type Me = {
+  id: number;
+  email: string;
+  full_name?: string;
+  phone?: string;
+  balance?: number | string;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+};
+
+
 export function useMe() {
   const setUser = useAuthStore((s) => s.setUser);
   const user = useAuthStore((s) => s.user);

@@ -44,6 +44,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
+    nssf_number = models.CharField(max_length=50, blank=True, null=True)
+    balance = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0.00,
+        help_text="Accumulated NSSF/pension balance"
+    )
 
     objects = UserManager()
 

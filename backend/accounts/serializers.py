@@ -1,61 +1,115 @@
+# accounts/serializers.py
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 User = get_user_model()
 
 
+# ---------- Public / general-purpose ----------
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for returning user profile details."""
-
+    """
+    General-purpose user serializer.
+    Uses the model's `full_name` field directly (your User does not have first/last names).
+    """
     class Meta:
         model = User
-        fields = ["id", "email", "role", "full_name", "phone", "date_joined", "is_active"]
-        read_only_fields = ["id", "role", "is_active", "email"]
+        fields = [
+            "id",
+            "email",
+            "full_name",
+            "phone",
+            "role",
+            "nssf_number",
+            "balance",        # DRF will serialize Decimal as string by default
+            "is_staff",
+            "is_superuser",
+            "is_active",
+            "date_joined",
+        ]
+        read_only_fields = [
+            "id", "email", "is_staff", "is_superuser", "is_active", "date_joined",
+        ]
+
+
+# ---------- /users/me/ ----------
+class UserMeSerializer(serializers.ModelSerializer):
+    """
+    What the logged-in user sees. `balance` is read-only here.
+    """
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "full_name",
+            "phone",
+            "role",
+            "nssf_number",
+            "balance",
+            "is_staff",
+            "is_superuser",
+            "date_joined",
+        ]
+        read_only_fields = fields  # everything read-only for /me
 
 
 class MeUpdateSerializer(serializers.Serializer):
-    """Serializer for updating the logged-in user's profile."""
-
-    full_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
-    phone = serializers.CharField(required=False, allow_blank=True, max_length=50)
-    password = serializers.CharField(required=False, write_only=True)
-
-    def validate_password(self, value):
-        if value:
-            validate_password(value)
-        return value
+    """
+    Fields a user is allowed to update on their own account.
+    """
+    full_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    nssf_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     def update(self, instance, validated_data):
-        if "full_name" in validated_data:
-            instance.full_name = validated_data["full_name"]
-        if "phone" in validated_data:
-            instance.phone = validated_data["phone"]
-        if validated_data.get("password"):
-            instance.set_password(validated_data["password"])
-        instance.save()
+        for k, v in validated_data.items():
+            setattr(instance, k, v)
+        instance.save(update_fields=list(validated_data.keys()))
         return instance
 
 
-class RegisterSerializer(serializers.Serializer):
-    """Serializer for registering a new user."""
-
-    email = serializers.EmailField()
+# ---------- Registration ----------
+class RegisterSerializer(serializers.ModelSerializer):
+    """
+    Minimal registration: your User uses `email` as USERNAME_FIELD.
+    Accept optional full_name/phone; do NOT include `username` / first_name / last_name.
+    """
     password = serializers.CharField(write_only=True)
-    full_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
-    phone = serializers.CharField(required=False, allow_blank=True, max_length=50)
 
-    def validate_password(self, value):
-        validate_password(value)
-        return value
+    class Meta:
+        model = User
+        fields = ["email", "password", "full_name", "phone", "nssf_number"]
+        extra_kwargs = {
+            "full_name": {"required": False, "allow_blank": True, "allow_null": True},
+            "phone": {"required": False, "allow_blank": True, "allow_null": True},
+            "nssf_number": {"required": False, "allow_blank": True, "allow_null": True},
+        }
 
     def create(self, validated_data):
-        # Create the user without requiring a username
-        user = User.objects.create_user(
-            email=validated_data["email"],
-            password=validated_data["password"],
-            full_name=validated_data.get("full_name", ""),
-            phone=validated_data.get("phone", ""),
-            role=getattr(User, "Roles", None).PENSIONER if hasattr(User, "Roles") else "PENSIONER",
-        )
+        password = validated_data.pop("password")
+        # use your custom manager to ensure proper defaults (is_active, etc.)
+        user = User.objects.create_user(password=password, **validated_data)
         return user
+
+
+# ---------- Admin management of members ----------
+class AdminMemberSerializer(serializers.ModelSerializer):
+    """
+    Admin can view/edit member, including `balance`.
+    """
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "full_name",
+            "phone",
+            "role",
+            "nssf_number",
+            "balance",      # editable by admin
+            "is_active",
+            "date_joined",
+            "is_staff",
+            "is_superuser",
+        ]
+        read_only_fields = ["id", "email", "date_joined"]

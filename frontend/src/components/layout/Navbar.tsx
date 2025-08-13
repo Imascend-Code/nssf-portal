@@ -1,3 +1,4 @@
+// src/components/layout/Navbar.tsx
 import * as React from 'react';
 import { Link as RouterLink, NavLink, useNavigate } from 'react-router-dom';
 import {
@@ -15,29 +16,41 @@ import LockIcon from '@mui/icons-material/Lock';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import RequestPageIcon from '@mui/icons-material/RequestPage';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import StarOutlineIcon from '@mui/icons-material/StarOutline';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 import ThemeToggle from '../ui/ThemeToggle';
 import { useAuthStore } from '@/store/auth';
 
 type NavItem = { to: string; label: string; icon?: React.ReactNode };
-const NAV_ITEMS: NavItem[] = [
-  { to: '/features', label: 'Features', icon: <SecurityIcon fontSize="small" /> },
-  { to: '/payments', label: 'Payments', icon: <PaymentsIcon fontSize="small" /> },
-  { to: '/requests', label: 'Requests', icon: <RequestPageIcon fontSize="small" /> },
+
+/** Public-only items (hide when logged in) */
+const PUBLIC_ONLY: NavItem[] = [
+  { to: '/features', label: 'Features', icon: <StarOutlineIcon fontSize="small" /> },
   { to: '/support', label: 'Support', icon: <HelpOutlineIcon fontSize="small" /> },
 ];
 
-// MUI Button + NavLink with active styling
+/** Common items (show for everyone) */
+const COMMON: NavItem[] = [
+  { to: '/payments', label: 'Payments', icon: <PaymentsIcon fontSize="small" /> },
+  { to: '/requests', label: 'Requests', icon: <RequestPageIcon fontSize="small" /> },
+];
+
+/** Admin items (only for admins) */
+const ADMIN_ONLY: NavItem[] = [
+  { to: '/admin', label: 'Admin', icon: <AdminPanelSettingsIcon fontSize="small" /> },
+  { to: '/admin/requests', label: 'Admin Requests', icon: <RequestPageIcon fontSize="small" /> },
+  { to: '/admin/users', label: 'Admin Users', icon: <PersonIcon fontSize="small" /> },
+];
+
+// Button that renders a NavLink with active styles
 const NavLinkButton = ({ to, children }: { to: string; children: React.ReactNode }) => (
   <Button
     component={NavLink}
     to={to}
     disableElevation
     sx={{
-      px: 1.5,
-      py: 0.75,
-      borderRadius: 1.5,
-      typography: 'body2',
+      px: 1.5, py: 0.75, borderRadius: 1.5, typography: 'body2',
       // style prop goes to NavLink (receives isActive)
       style: ({ isActive }: { isActive: boolean }) => ({
         backgroundColor: isActive ? 'rgba(0,0,0,0.08)' : 'transparent',
@@ -67,7 +80,18 @@ export default function Navbar() {
   // Mobile drawer
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
-  const initials = (user?.full_name || user?.email || 'NA').slice(0, 2).toUpperCase();
+  const displayName = user?.full_name || user?.email || '';
+  const initials = (displayName || 'NA').slice(0, 2).toUpperCase();
+
+  const isAdmin = !!user && ((user as any).is_superuser || (user as any).is_staff || (user as any).role === 'ADMIN');
+
+  /** Build nav items based on auth/admin status */
+  const navItems: NavItem[] = React.useMemo(() => {
+    const base = [...COMMON];
+    if (!user) base.unshift(...PUBLIC_ONLY);
+    if (isAdmin) base.push(...ADMIN_ONLY);
+    return base;
+  }, [user, isAdmin]);
 
   return (
     <AppBar
@@ -99,7 +123,7 @@ export default function Navbar() {
           {/* Desktop nav */}
           {isDesktop && (
             <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
-              {NAV_ITEMS.map((item) => (
+              {navItems.map((item) => (
                 <NavLinkButton key={item.to} to={item.to}>
                   {item.label}
                 </NavLinkButton>
@@ -114,6 +138,7 @@ export default function Navbar() {
             <Stack direction="row" spacing={1} alignItems="center">
               {user ? (
                 <>
+                  {/* Dashboard quick link */}
                   <Button
                     variant="outlined"
                     size="small"
@@ -123,7 +148,22 @@ export default function Navbar() {
                     Dashboard
                   </Button>
 
-                  <Tooltip title={user.full_name || user.email}>
+                  {/* Visible name next to avatar */}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      maxWidth: 220,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={displayName}
+                  >
+                    {displayName}
+                  </Typography>
+
+                  {/* Avatar opens small menu for Profile/Dashboard */}
+                  <Tooltip title={displayName}>
                     <IconButton onClick={handleAvatarClick} size="small" aria-label="account menu">
                       <Avatar sx={{ width: 32, height: 32 }}>{initials}</Avatar>
                     </IconButton>
@@ -158,21 +198,21 @@ export default function Navbar() {
                       </ListItemIcon>
                       Dashboard
                     </MenuItem>
-                    <Divider />
-                    <MenuItem
-                      onClick={() => {
-                        closeMenu();
-                        logout();
-                        navigate('/auth');
-                      }}
-                      sx={{ color: 'error.main' }}
-                    >
-                      <ListItemIcon sx={{ color: 'error.main' }}>
-                        <LogoutIcon fontSize="small" />
-                      </ListItemIcon>
-                      Sign out
-                    </MenuItem>
                   </Menu>
+
+                  {/* Dedicated Logout button */}
+                  <Button
+                    variant="text"
+                    color="error"
+                    size="small"
+                    startIcon={<LogoutIcon />}
+                    onClick={() => {
+                      logout();
+                      navigate('/login', { replace: true });
+                    }}
+                  >
+                    Logout
+                  </Button>
                 </>
               ) : (
                 <Button
@@ -185,11 +225,10 @@ export default function Navbar() {
                 </Button>
               )}
 
-              {/* Theme toggle */}
-              <ThemeToggle />
+              {/* Theme toggle only on mobile per your preference — so it’s hidden on desktop */}
             </Stack>
           ) : (
-            // Mobile: hamburger + theme toggle
+            // Mobile: theme toggle + hamburger
             <Stack direction="row" spacing={0.5} alignItems="center">
               <ThemeToggle />
               <IconButton onClick={() => setDrawerOpen(true)} aria-label="open menu">
@@ -202,21 +241,42 @@ export default function Navbar() {
 
       {/* Mobile drawer */}
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <Box sx={{ width: 280, p: 1 }}>
-          <Box sx={{ px: 2, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ width: 300, p: 1.5 }}>
+          <Box sx={{ px: 1, py: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <SecurityIcon color="primary" />
-            <Typography variant="h6">NSSF Pensioner</Typography>
+            <Typography variant="h6" sx={{ flex: 1 }}>
+              NSSF Pensioner
+            </Typography>
           </Box>
-          <Divider />
+
+          {user && (
+            <Box sx={{ px: 1.5, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Avatar>{initials}</Avatar>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
+                  title={displayName}
+                >
+                  {displayName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Signed in
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          <Divider sx={{ my: 1 }} />
 
           <List sx={{ pt: 0 }}>
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <ListItemButton
                 key={item.to}
                 component={NavLink}
                 to={item.to}
                 onClick={() => setDrawerOpen(false)}
-                // style get isActive
+                // style receives isActive from NavLink
                 style={({ isActive }: { isActive: boolean }) => ({
                   background: isActive ? 'rgba(0,0,0,0.06)' : 'transparent',
                 })}
@@ -229,20 +289,45 @@ export default function Navbar() {
 
           <Divider sx={{ my: 1 }} />
 
-          <Box sx={{ px: 2, py: 1 }}>
+          <Box sx={{ px: 1.5, py: 1 }}>
             {user ? (
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<DashboardIcon />}
-                onClick={() => {
-                  setDrawerOpen(false);
-                  navigate('/dashboard');
-                }}
-                sx={{ mb: 1 }}
-              >
-                Dashboard
-              </Button>
+              <Stack spacing={1}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  startIcon={<DashboardIcon />}
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    navigate('/dashboard');
+                  }}
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<PersonIcon />}
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    navigate('/profile');
+                  }}
+                >
+                  Profile
+                </Button>
+                <Button
+                  fullWidth
+                  color="error"
+                  variant="text"
+                  startIcon={<LogoutIcon />}
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    logout();
+                    navigate('/login', { replace: true });
+                  }}
+                >
+                  Logout
+                </Button>
+              </Stack>
             ) : (
               <Button
                 fullWidth
@@ -252,7 +337,6 @@ export default function Navbar() {
                   setDrawerOpen(false);
                   navigate('/login');
                 }}
-                sx={{ mb: 1 }}
               >
                 Sign in
               </Button>
