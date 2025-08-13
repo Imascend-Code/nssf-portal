@@ -1,99 +1,146 @@
 // src/pages/Dashboard.tsx
-import { useProfile } from "@/api/hooks"
+import { useProfile, usePayments, useMyRequests } from "@/api/hooks"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, ArrowUpRight, CreditCard, FileText, Users } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, CreditCard, FileText, Users } from "lucide-react"
 
 export default function Dashboard() {
-  const { data: profile, isLoading } = useProfile()
+  const { data: profile } = useProfile()
+  const payments = usePayments({ page_size: 5 })
+  const requests = useMyRequests({ page_size: 5 })
 
-  const stats = [
-    { label: "Total Contributions", value: "UGX 12,500,000", icon: CreditCard },
-    { label: "Pending Requests", value: "3", icon: FileText },
-    { label: "Beneficiaries", value: "2", icon: Users },
-  ]
-
-  const recentActivity = [
-    { id: 1, title: "Monthly Contribution", amount: "UGX 500,000", date: "2025-08-05", status: "COMPLETED" },
-    { id: 2, title: "Withdrawal Request", amount: "UGX 2,000,000", date: "2025-07-20", status: "PENDING" },
-    { id: 3, title: "Added Beneficiary", amount: "-", date: "2025-07-15", status: "COMPLETED" },
+  const kpis = [
+    { title: "Total Payments", value: payments.data?.length ?? 0, icon: CreditCard },
+    { title: "Pending Requests", value: (requests.data?.results || []).filter((r: any) => r.status !== "resolved" && r.status !== "closed").length, icon: FileText },
+    { title: "Beneficiaries", value: profile?.beneficiaries_count ?? 0, icon: Users },
   ]
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
+    <div className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}!</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Here’s an overview of your account activity and contributions.
+          Overview of your account activity and contributions.
         </p>
       </div>
 
-      {/* Stats */}
+      {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat, idx) => (
-          <Card key={idx}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+        {kpis.map((k, i) => (
+          <Card key={i} className="rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">{k.title}</CardTitle>
+              <k.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                View details <ArrowUpRight className="h-3 w-3" />
-              </p>
+              <div className="text-2xl font-bold">{k.value}</div>
+              <p className="text-xs text-muted-foreground">Updated just now</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest transactions and updates in your account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center p-6">
-              <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Activity</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentActivity.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell>{activity.date}</TableCell>
-                      <TableCell>{activity.title}</TableCell>
-                      <TableCell>{activity.amount}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            activity.status === "COMPLETED"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {activity.status}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Data Tabs */}
+      <Tabs defaultValue="payments" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="payments">Recent Payments</TabsTrigger>
+          <TabsTrigger value="requests">Recent Requests</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="payments">
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle>Payments</CardTitle>
+              <CardDescription>Your latest transactions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {payments.isLoading ? (
+                <div className="flex justify-center p-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : payments.data?.length ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Period</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Reference</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {payments.data.map((p: any) => (
+                        <TableRow key={p.id}>
+                          <TableCell>
+                            {p.period_start} – {p.period_end}
+                          </TableCell>
+                          <TableCell>{new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX" }).format(p.amount)}</TableCell>
+                          <TableCell>
+                            <Badge variant={p.status === "processed" ? "default" : p.status === "pending" ? "secondary" : "destructive"}>
+                              {p.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{p.reference || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No payments found.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="requests">
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle>Requests</CardTitle>
+              <CardDescription>Latest service requests</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {requests.isLoading ? (
+                <div className="flex justify-center p-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (requests.data?.results || []).length ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Priority</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {requests.data.results.map((r: any) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="font-medium">{r.title}</TableCell>
+                          <TableCell>{r.category?.name || "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant={r.status === "resolved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"}>
+                              {r.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="capitalize">{r.priority}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No requests yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

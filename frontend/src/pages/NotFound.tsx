@@ -1,30 +1,28 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useLocation, Link } from "react-router-dom";
-import { useEffect } from "react";
+// src/pages/NotFound.tsx
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Link, useLocation } from "react-router-dom"
+import { useEffect } from "react"
 
 export default function NotFound() {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access:", location.pathname);
-  }, [location.pathname]);
+  const location = useLocation()
+  useEffect(() => console.warn("404:", location.pathname), [location.pathname])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted px-4">
-      <Card className="max-w-md w-full shadow-lg">
+    <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <Card className="max-w-md w-full rounded-2xl shadow-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-5xl font-bold text-destructive">404</CardTitle>
-          <CardDescription className="text-lg mt-2">
-            Oops! The page you're looking for doesn’t exist.
+          <CardTitle className="text-5xl font-extrabold">404</CardTitle>
+          <CardDescription className="text-base mt-2">
+            The page you’re looking for doesn’t exist.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center">
           <Button asChild>
-            <Link to="/">Return to Home</Link>
+            <Link to="/">Back to Home</Link>
           </Button>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

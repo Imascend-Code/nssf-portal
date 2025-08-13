@@ -1,21 +1,21 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Phone, Mail, HelpCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+// src/pages/Support.tsx
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Phone, Mail, HelpCircle } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export default function Support() {
   return (
-    <div className="container mx-auto px-4 py-10 space-y-8">
+    <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
       <header className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Support</h1>
-        <p className="text-muted-foreground">
-          We’re here to help with any questions about your pension.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">Support</h1>
+        <p className="text-muted-foreground">We’re here to help with your account and requests.</p>
       </header>
 
       <div className="grid gap-6 sm:grid-cols-2">
         {/* Self-help */}
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader>
             <div className="flex items-center gap-2">
               <HelpCircle className="h-5 w-5 text-primary" />
@@ -35,8 +35,8 @@ export default function Support() {
           </CardContent>
         </Card>
 
-        {/* Contact Us */}
-        <Card>
+        {/* Contact */}
+        <Card className="rounded-2xl">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Phone className="h-5 w-5 text-primary" />
@@ -55,6 +55,21 @@ export default function Support() {
           </CardContent>
         </Card>
       </div>
+
+      <Separator />
+
+      {/* CTA */}
+      <Card className="rounded-2xl">
+        <CardContent className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="font-semibold">Need official documentation?</div>
+            <p className="text-sm text-muted-foreground">Generate a statement for any date range.</p>
+          </div>
+          <Button asChild>
+            <Link to="/payments">Open Payments</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

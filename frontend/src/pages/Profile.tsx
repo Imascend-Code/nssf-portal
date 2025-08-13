@@ -1,126 +1,161 @@
 // src/pages/Profile.tsx
-import { useProfile, useUpdateProfile } from "@/api/hooks"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { useProfile, useUpdateProfile, useBeneficiaries, useAddBeneficiary } from "@/api/hooks"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Loader2, Save, Plus } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { Loader2, Save } from "lucide-react"
 
 export default function Profile() {
-  const { data: profile, isLoading } = useProfile()
+  const profile = useProfile()
   const updateProfile = useUpdateProfile()
+  const beneficiaries = useBeneficiaries()
+  const addBeneficiary = useAddBeneficiary()
 
   const form = useForm({
-    defaultValues: {
-      full_name: profile?.full_name || "",
-      phone: profile?.phone || "",
-      address: profile?.address || "",
-      city: profile?.city || "",
-      bank_name: profile?.bank_name || "",
-      bank_account: profile?.bank_account || "",
+    values: {
+      full_name: profile.data?.full_name || "",
+      phone: profile.data?.phone || "",
+      address: profile.data?.address || "",
+      city: profile.data?.city || "",
+      bank_name: profile.data?.bank_name || "",
+      bank_account: profile.data?.bank_account || "",
     },
   })
 
-  const onSubmit = (values: any) => {
-    updateProfile.mutate(values)
-  }
+  const onSubmit = (values: any) => updateProfile.mutate(values)
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          View and update your account details.
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-          <CardDescription>Update your name, contact info, and address.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center p-6">
-              <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+    <div className="container max-w-6xl mx-auto px-4 py-8 grid gap-6 lg:grid-cols-3">
+      {/* Left: Identity */}
+      <Card className="rounded-2xl lg:col-span-1 h-fit">
+        <CardContent className="p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-14 w-14">
+              <AvatarFallback>
+                {(profile.data?.full_name || "N").slice(0, 1).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-semibold">{profile.data?.full_name || "Member"}</div>
+              <p className="text-sm text-muted-foreground">{profile.data?.nssf_number || "NSSF—"}</p>
             </div>
-          ) : (
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Full Name */}
-              <div className="grid gap-2">
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  {...form.register("full_name")}
-                  placeholder="John Doe"
-                />
-              </div>
+          </div>
+          <div className="text-sm">
+            <div className="text-muted-foreground">Phone</div>
+            <div>{profile.data?.phone || "—"}</div>
+          </div>
+          <div className="text-sm">
+            <div className="text-muted-foreground">Address</div>
+            <div>{profile.data?.address || "—"}</div>
+          </div>
+        </CardContent>
+      </Card>
 
-              {/* Phone */}
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  {...form.register("phone")}
-                  placeholder="+256..."
-                />
+      {/* Right: Forms */}
+      <div className="lg:col-span-2 grid gap-6">
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Personal & Bank Details</CardTitle>
+            <CardDescription>Update your contact and payout information.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {profile.isLoading ? (
+              <div className="flex justify-center p-6">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
+            ) : (
+              <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input id="full_name" {...form.register("full_name")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" {...form.register("phone")} />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input id="address" {...form.register("address")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" {...form.register("city")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="bank_name">Bank Name</Label>
+                  <Input id="bank_name" {...form.register("bank_name")} />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="bank_account">Bank Account</Label>
+                  <Input id="bank_account" {...form.register("bank_account")} />
+                </div>
 
-              {/* Address */}
-              <div className="grid gap-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  {...form.register("address")}
-                  placeholder="Street, Block, etc."
-                />
+                <div className="sm:col-span-2 flex justify-end">
+                  <Button type="submit" disabled={updateProfile.isLoading}>
+                    {updateProfile.isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Beneficiaries */}
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Beneficiaries</CardTitle>
+            <CardDescription>Your current beneficiaries and shares.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {beneficiaries.isLoading ? (
+              <div className="flex justify-center p-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
+            ) : (beneficiaries.data || []).length ? (
+              <ul className="grid gap-3">
+                {(beneficiaries.data || []).map((b: any) => (
+                  <li key={b.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <div className="font-medium">{b.full_name}</div>
+                      <div className="text-xs text-muted-foreground">{b.relationship}</div>
+                    </div>
+                    <div className="text-sm font-semibold">{b.percentage}%</div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No beneficiaries yet.</p>
+            )}
 
-              {/* City */}
-              <div className="grid gap-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  {...form.register("city")}
-                  placeholder="Kampala"
-                />
-              </div>
-
-              {/* Bank Details */}
-              <div className="grid gap-2">
-                <Label htmlFor="bank_name">Bank Name</Label>
-                <Input
-                  id="bank_name"
-                  {...form.register("bank_name")}
-                  placeholder="Bank of Africa"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="bank_account">Bank Account Number</Label>
-                <Input
-                  id="bank_account"
-                  {...form.register("bank_account")}
-                  placeholder="0000 0000 0000"
-                />
-              </div>
-
-              {/* Save Button */}
-              <div className="flex justify-end">
-                <Button type="submit" disabled={updateProfile.isLoading}>
-                  {updateProfile.isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Save Changes
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                const fd = new FormData(e.currentTarget as HTMLFormElement)
+                await addBeneficiary.mutateAsync({
+                  full_name: String(fd.get("full_name") || ""),
+                  relationship: String(fd.get("relationship") || ""),
+                  percentage: Number(fd.get("percentage") || 0),
+                })
+                ;(e.currentTarget as HTMLFormElement).reset()
+              }}
+              className="grid gap-3 sm:grid-cols-3 pt-2"
+            >
+              <Input name="full_name" placeholder="Full name" required />
+              <Input name="relationship" placeholder="Relationship" required />
+              <div className="flex gap-2">
+                <Input name="percentage" type="number" min={0} max={100} placeholder="%" className="w-full" required />
+                <Button type="submit" className="shrink-0">
+                  <Plus className="h-4 w-4 mr-1" /> Add
                 </Button>
               </div>
             </form>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
