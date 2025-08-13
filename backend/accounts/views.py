@@ -1,3 +1,4 @@
+# accounts/views.py
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -11,16 +12,18 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
 class MeView(generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = MeSerializer
     def get_object(self): return self.request.user
 
 @api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])  # <-- enforce auth
 def change_password(request):
     ser = PasswordChangeSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
     user = request.user
     if not user.check_password(ser.validated_data["old_password"]):
         return Response({"detail":"Old password incorrect"}, status=400)
-    user.set_password(ser.validated_data["new_password"])
+    user.set_password(ser.validated_data["new_password"])  # validated w/ validators
     user.save()
     return Response({"detail":"Password updated"})
