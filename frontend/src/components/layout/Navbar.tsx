@@ -18,6 +18,7 @@ import RequestPageIcon from '@mui/icons-material/RequestPage';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'; // NEW: reports icon
 
 import ThemeToggle from '../ui/ThemeToggle';
 import { useAuthStore } from '@/store/auth';
@@ -34,6 +35,7 @@ const PUBLIC_ONLY: NavItem[] = [
 const COMMON: NavItem[] = [
   { to: '/payments', label: 'Payments', icon: <PaymentsIcon fontSize="small" /> },
   { to: '/requests', label: 'Requests', icon: <RequestPageIcon fontSize="small" /> },
+  { to: '/reports', label: 'Reports', icon: <ReceiptLongIcon fontSize="small" /> }, // NEW
 ];
 
 /** Admin items (only for admins) */
@@ -41,6 +43,7 @@ const ADMIN_ONLY: NavItem[] = [
   { to: '/admin', label: 'Admin', icon: <AdminPanelSettingsIcon fontSize="small" /> },
   { to: '/admin/requests', label: 'Admin Requests', icon: <RequestPageIcon fontSize="small" /> },
   { to: '/admin/users', label: 'Admin Users', icon: <PersonIcon fontSize="small" /> },
+  { to: '/admin/reports', label: 'Admin Reports', icon: <ReceiptLongIcon fontSize="small" /> }, // NEW
 ];
 
 // Button that renders a NavLink with active styles
@@ -51,7 +54,6 @@ const NavLinkButton = ({ to, children }: { to: string; children: React.ReactNode
     disableElevation
     sx={{
       px: 1.5, py: 0.75, borderRadius: 1.5, typography: 'body2',
-      // style prop goes to NavLink (receives isActive)
       style: ({ isActive }: { isActive: boolean }) => ({
         backgroundColor: isActive ? 'rgba(0,0,0,0.08)' : 'transparent',
       }),
@@ -71,13 +73,11 @@ export default function Navbar() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
-  // User menu
   const [menuEl, setMenuEl] = React.useState<null | HTMLElement>(null);
   const menuOpen = Boolean(menuEl);
   const handleAvatarClick = (e: React.MouseEvent<HTMLElement>) => setMenuEl(e.currentTarget);
   const closeMenu = () => setMenuEl(null);
 
-  // Mobile drawer
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   const displayName = user?.full_name || user?.email || '';
@@ -138,7 +138,6 @@ export default function Navbar() {
             <Stack direction="row" spacing={1} alignItems="center">
               {user ? (
                 <>
-                  {/* Dashboard quick link */}
                   <Button
                     variant="outlined"
                     size="small"
@@ -148,7 +147,16 @@ export default function Navbar() {
                     Dashboard
                   </Button>
 
-                  {/* Visible name next to avatar */}
+                  {/* Quick link to Reports */}
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => navigate(isAdmin ? '/admin/reports' : '/reports')}
+                    startIcon={<ReceiptLongIcon />}
+                  >
+                    Reports
+                  </Button>
+
                   <Typography
                     variant="body2"
                     sx={{
@@ -162,7 +170,6 @@ export default function Navbar() {
                     {displayName}
                   </Typography>
 
-                  {/* Avatar opens small menu for Profile/Dashboard */}
                   <Tooltip title={displayName}>
                     <IconButton onClick={handleAvatarClick} size="small" aria-label="account menu">
                       <Avatar sx={{ width: 32, height: 32 }}>{initials}</Avatar>
@@ -198,9 +205,20 @@ export default function Navbar() {
                       </ListItemIcon>
                       Dashboard
                     </MenuItem>
+                    {/* NEW: Reports in avatar menu */}
+                    <MenuItem
+                      onClick={() => {
+                        closeMenu();
+                        navigate(isAdmin ? '/admin/reports' : '/reports');
+                      }}
+                    >
+                      <ListItemIcon>
+                        <ReceiptLongIcon fontSize="small" />
+                      </ListItemIcon>
+                      Reports
+                    </MenuItem>
                   </Menu>
 
-                  {/* Dedicated Logout button */}
                   <Button
                     variant="text"
                     color="error"
@@ -224,8 +242,6 @@ export default function Navbar() {
                   Sign in
                 </Button>
               )}
-
-              {/* Theme toggle only on mobile per your preference — so it’s hidden on desktop */}
             </Stack>
           ) : (
             // Mobile: theme toggle + hamburger
@@ -276,7 +292,6 @@ export default function Navbar() {
                 component={NavLink}
                 to={item.to}
                 onClick={() => setDrawerOpen(false)}
-                // style receives isActive from NavLink
                 style={({ isActive }: { isActive: boolean }) => ({
                   background: isActive ? 'rgba(0,0,0,0.06)' : 'transparent',
                 })}
@@ -302,6 +317,17 @@ export default function Navbar() {
                   }}
                 >
                   Dashboard
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<ReceiptLongIcon />}
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    navigate(isAdmin ? '/admin/reports' : '/reports');
+                  }}
+                >
+                  Reports
                 </Button>
                 <Button
                   fullWidth

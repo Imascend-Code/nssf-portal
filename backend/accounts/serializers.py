@@ -109,7 +109,6 @@ class AdminMemberSerializer(serializers.ModelSerializer):
             "balance",      # editable by admin
             "is_active",
             "date_joined",
-            "is_staff",
-            "is_superuser",
+
         ]
         read_only_fields = ["id", "email", "date_joined"]

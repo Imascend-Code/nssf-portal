@@ -15,6 +15,8 @@ import Features from "./pages/Features";   // <-- add
 import Support from "./pages/Support";     // <-- add
 import Protected from "./components/routing/Protected";
 import Root from "./components/layout/Root";
+import AdminReports from "./pages/Admin/Reports";
+import Reports from "./pages/Reports";
 
 export default function App() {
   return (
@@ -40,6 +42,13 @@ export default function App() {
         <Route path="/admin" element={<Protected roles={["ADMIN"]}><AdminDashboard /></Protected>} />
         <Route path="/admin/requests" element={<Protected roles={["ADMIN","STAFF"]}><AdminRequests /></Protected>} />
         <Route path="/admin/users" element={<Protected roles={["ADMIN"]}><AdminUsers /></Protected>} />
+
+        {/* Member reports */}
+        <Route path="/reports" element={<Protected><Reports /></Protected>} />
+
+        {/* Admin reports */}
+        <Route path="/admin/reports" element={<Protected roles={["ADMIN","STAFF"]}><AdminReports /></Protected>} />
+
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

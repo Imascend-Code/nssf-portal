@@ -1,4 +1,4 @@
-# project/urls.py
+# backend/config/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -8,27 +8,24 @@ from drf_spectacular.views import (
     SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 )
 
-# --- ViewSets you already have ---
+# ViewSets
 from profiles.views import ProfileMeViewSet, BeneficiaryItemViewSet
 from payments.views import PaymentViewSet
 from services.views import ServiceCategoryViewSet, ServiceRequestViewSet
 from notifications.views import NotificationViewSet
 from audits.views import AuditLogViewSet
 
-# --- Function views ---
-from reports.views import summary as report_summary
+# Function views (import the module, then reference attributes to avoid circulars)
+import reports.views as reports_views
 from payments.views_statement import statement_pdf
 
-# --- Auth (JWT) ---
+# JWT
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-# --- Accounts (add admin members API) ---
-# If AdminMemberViewSet lives in accounts.views:
-from accounts.views import AdminMemberViewSet
+# Optional: admin members API if you have it
+# from accounts.views import AdminMemberViewSet
 
 router = DefaultRouter()
-
-# Your existing endpoints
 router.register(r"profiles/me", ProfileMeViewSet, basename="profiles-me")
 router.register(r"profiles/beneficiaries", BeneficiaryItemViewSet, basename="beneficiaries")
 router.register(r"payments", PaymentViewSet, basename="payments")
@@ -36,9 +33,7 @@ router.register(r"service-categories", ServiceCategoryViewSet, basename="service
 router.register(r"requests", ServiceRequestViewSet, basename="requests")
 router.register(r"notifications", NotificationViewSet, basename="notifications")
 router.register(r"audits", AuditLogViewSet, basename="audits")
-
-# NEW: Admin members API (list/retrieve/update + set_balance/adjust_balance)
-router.register(r"members", AdminMemberViewSet, basename="members")
+# router.register(r"members", AdminMemberViewSet, basename="members")  # uncomment if present
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -50,18 +45,18 @@ urlpatterns = [
 
     # API v1
     path("api/v1/", include([
-        # DRF routers
+        # Router endpoints
         path("", include(router.urls)),
 
-        # Accounts views (users/me, auth/register)
+        # Accounts app URLs (users/me, auth/register, etc.)
         path("", include(("accounts.urls", "accounts"), namespace="accounts")),
 
         # JWT auth
         path("auth/login/", TokenObtainPairView.as_view(), name="jwt-login"),
         path("auth/refresh/", TokenRefreshView.as_view(), name="jwt-refresh"),
 
-        # Reports & documents
-        path("reports/summary/", report_summary, name="report-summary"),
+        # Reports & documents (wired directly — no missing modules)
+        path("reports/summary/", reports_views.summary, name="report-summary"),
         path("documents/statement/", statement_pdf, name="statement-pdf"),
     ])),
 ]

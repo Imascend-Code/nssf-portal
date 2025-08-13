@@ -38,6 +38,11 @@ class RegisterView(views.APIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        u = request.user
+        return bool(u and (u.is_superuser or u.is_staff or getattr(u, "role", "") == "ADMIN"))
+
 class AdminMemberViewSet(viewsets.ModelViewSet):
     """
     Admin endpoints:
@@ -49,7 +54,9 @@ class AdminMemberViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all().order_by("-date_joined")
     serializer_class = AdminMemberSerializer
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    filterset_fields = ["role", "is_active"]
+    search_fields = ["email", "full_name", "first_name", "last_name", "nssf_number"]
 
     def get_queryset(self):
         qs = super().get_queryset()

@@ -1,6 +1,6 @@
 // src/pages/Admin/Dashboard.tsx
 import * as React from "react";
-import { useReport } from "@/api/hooks";
+import { useReport } from "../../api/hooks";
 import {
   Container, Grid, Card, CardHeader, CardContent, Typography,
   Stack, CircularProgress, Alert, Divider
