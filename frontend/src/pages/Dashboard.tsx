@@ -1,84 +1,99 @@
 // src/pages/Dashboard.tsx
-import { Link } from "react-router-dom";
-import { useMe, usePayments, useMyRequests } from "../api/hooks";
-
-function SectionCard({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="rounded-xl border bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">{children}</span>;
-}
+import { useProfile } from "@/api/hooks"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Loader2, ArrowUpRight, CreditCard, FileText, Users } from "lucide-react"
 
 export default function Dashboard() {
-  const me = useMe();
-  const pays = usePayments();
-  const reqs = useMyRequests();
+  const { data: profile, isLoading } = useProfile()
 
-  const loading = me.isLoading || pays.isLoading || reqs.isLoading;
+  const stats = [
+    { label: "Total Contributions", value: "UGX 12,500,000", icon: CreditCard },
+    { label: "Pending Requests", value: "3", icon: FileText },
+    { label: "Beneficiaries", value: "2", icon: Users },
+  ]
 
-  const payments = (pays.data?.results ?? pays.data ?? []).slice(0, 5);
-  const requests = (reqs.data?.results ?? reqs.data ?? []).slice(0, 5);
+  const recentActivity = [
+    { id: 1, title: "Monthly Contribution", amount: "UGX 500,000", date: "2025-08-05", status: "COMPLETED" },
+    { id: 2, title: "Withdrawal Request", amount: "UGX 2,000,000", date: "2025-07-20", status: "PENDING" },
+    { id: 3, title: "Added Beneficiary", amount: "-", date: "2025-07-15", status: "COMPLETED" },
+  ]
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
-      <div className="mx-auto max-w-6xl p-6">
-        <h2 className="mb-6 text-2xl font-bold text-gray-900">
-          {loading ? "Loading…" : `Welcome ${me.data?.full_name || me.data?.email}`}
-        </h2>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <SectionCard
-            title="Recent Payments"
-            action={<Link className="text-sm text-sky-700 hover:underline" to="/payments">View all</Link>}
-          >
-            <ul className="divide-y text-sm">
-              {payments.map((p: any) => (
-                <li key={p.id} className="flex items-center justify-between py-2">
-                  <div className="truncate text-gray-700">
-                    {p.period_start} → {p.period_end}
-                  </div>
-                  <div className="ml-4 flex items-center gap-3">
-                    <Badge>{p.status}</Badge>
-                    <span className="font-medium text-gray-900">
-                      {Number(p.amount).toLocaleString()}
-                    </span>
-                  </div>
-                </li>
-              ))}
-              {payments.length === 0 && <li className="py-4 text-gray-500">No payments yet.</li>}
-            </ul>
-          </SectionCard>
-
-          <SectionCard
-            title="Recent Requests"
-            action={
-              <div className="space-x-3 text-sm">
-                <Link className="text-sky-700 hover:underline" to="/requests">My requests</Link>
-                <Link className="text-sky-700 hover:underline" to="/requests/new">New</Link>
-              </div>
-            }
-          >
-            <ul className="divide-y text-sm">
-              {requests.map((r: any) => (
-                <li key={r.id} className="flex items-center justify-between py-2">
-                  <div className="truncate pr-3 text-gray-700">{r.title}</div>
-                  <Badge>{r.status}</Badge>
-                </li>
-              ))}
-              {requests.length === 0 && <li className="py-4 text-gray-500">No requests yet.</li>}
-            </ul>
-          </SectionCard>
-        </div>
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}!</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Here’s an overview of your account activity and contributions.
+        </p>
       </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {stats.map((stat, idx) => (
+          <Card key={idx}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                View details <ArrowUpRight className="h-3 w-3" />
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Latest transactions and updates in your account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center p-6">
+              <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Activity</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentActivity.map((activity) => (
+                    <TableRow key={activity.id}>
+                      <TableCell>{activity.date}</TableCell>
+                      <TableCell>{activity.title}</TableCell>
+                      <TableCell>{activity.amount}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            activity.status === "COMPLETED"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {activity.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

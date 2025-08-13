@@ -1,9 +1,12 @@
-// src/pages/Auth/Register.tsx
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRegister } from "../../api/hooks";
+import { useRegister } from "@/api/hooks";
 import { useNavigate } from "react-router-dom";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const schema = z.object({
   full_name: z.string().min(2),
@@ -19,33 +22,39 @@ export default function Register() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   return (
-    <form onSubmit={handleSubmit(async (values) => {
-      await mutateAsync(values);
-      nav("/dashboard", { replace: true });
-    })} className="max-w-md mx-auto space-y-3 p-6 border rounded-lg mt-8">
-      <h1 className="text-xl font-semibold">Create account</h1>
-      <div>
-        <label className="block text-sm mb-1">Full name</label>
-        <input {...register("full_name")} className="border rounded w-full p-2" />
-        {errors.full_name && <p className="text-red-600 text-sm">{errors.full_name.message}</p>}
-      </div>
-      <div>
-        <label className="block text-sm mb-1">Phone</label>
-        <input {...register("phone")} className="border rounded w-full p-2" />
-      </div>
-      <div>
-        <label className="block text-sm mb-1">Email</label>
-        <input {...register("email")} className="border rounded w-full p-2" />
-        {errors.email && <p className="text-red-600 text-sm">{errors.email.message}</p>}
-      </div>
-      <div>
-        <label className="block text-sm mb-1">Password</label>
-        <input type="password" {...register("password")} className="border rounded w-full p-2" />
-        {errors.password && <p className="text-red-600 text-sm">{errors.password.message}</p>}
-      </div>
-      <button disabled={isPending} className="border rounded px-3 py-2">
-        {isPending ? "Creating..." : "Create account"}
-      </button>
-    </form>
+    <div className="mx-auto my-12 max-w-md px-4">
+      <Card>
+        <CardHeader><CardTitle>Create account</CardTitle></CardHeader>
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={handleSubmit(async (values) => { await mutateAsync(values); nav("/dashboard", { replace: true }); })}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Full name</Label>
+              <Input id="full_name" {...register("full_name")} />
+              {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" {...register("phone")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" {...register("email")} />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" {...register("password")} />
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+            </div>
+            <Button className="w-full" disabled={isPending}>
+              {isPending ? "Creating…" : "Create account"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -1,67 +1,82 @@
-import { usePayments } from "../api/hooks";
+// src/pages/Payments.tsx
+import { usePayments } from "@/api/hooks"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Loader2 } from "lucide-react"
+import { format } from "date-fns"
 
 export default function Payments() {
-  const q = usePayments();
+  const { data: payments, isLoading } = usePayments()
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
-      <div className="mx-auto max-w-6xl p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Payment History</h2>
-          <a
-            href="http://127.0.0.1:8000/api/v1/documents/statement/"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200"
-          >
-            Download Statement (PDF)
-          </a>
-        </div>
-
-        {q.isLoading ? (
-          <div className="rounded-xl border bg-white p-6 shadow-sm">Loading…</div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Period</th>
-                    <th className="px-4 py-3 font-medium">Amount</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Reference</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {(q.data?.results || []).map((p: any) => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-700">
-                        {p.period_start} → {p.period_end}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {Number(p.amount).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                          {p.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">{p.reference}</td>
-                    </tr>
-                  ))}
-                  {(!q.data?.results || q.data.results.length === 0) && (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
-                        No payments found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">My Payments</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Review all your payment transactions and statuses.
+        </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment History</CardTitle>
+          <CardDescription>All your past and recent transactions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center p-6">
+              <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+            </div>
+          ) : payments && payments.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Reference</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payments.map((payment: any) => (
+                    <TableRow key={payment.id}>
+                      <TableCell>
+                        {format(new Date(payment.date), "dd MMM yyyy")}
+                      </TableCell>
+                      <TableCell>{payment.reference || "—"}</TableCell>
+                      <TableCell>
+                        {new Intl.NumberFormat("en-UG", {
+                          style: "currency",
+                          currency: "UGX",
+                        }).format(payment.amount)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            payment.status === "COMPLETED"
+                              ? "success"
+                              : payment.status === "PENDING"
+                              ? "secondary"
+                              : "destructive"
+                          }
+                        >
+                          {payment.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground p-4 text-center">
+              No payments found.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
