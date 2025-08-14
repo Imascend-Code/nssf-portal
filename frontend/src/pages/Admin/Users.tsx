@@ -99,11 +99,17 @@ export default function AdminUsers() {
 
   // Query users
   const q = useQuery({
-    queryKey: ["admin-members", params],
-    enabled: isAdmin, // only admins should hit this
-    queryFn: async () => (await api.get<Paged<AdminMember>>(EP.MEMBERS, { params })).data,
-    keepPreviousData: true,
-  });
+    queryKey: ['users', filters],
+    queryFn: fetchUsers,
+    placeholderData: (prev) => prev,
+  })
+
+  function asArray<T>(v: unknown): T[] {
+    if (Array.isArray(v)) return v as T[]
+    if (v && typeof v === 'object' && 'results' in (v as any)) return (v as any).results ?? []
+    return []
+  }
+  const items = asArray<AdminMember>(q.data)
 
   const qc = useQueryClient();
 

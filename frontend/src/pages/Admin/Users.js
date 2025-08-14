@@ -52,11 +52,18 @@ export default function AdminUsers() {
     }, [search, role, status, page, rowsPerPage]);
     // Query users
     const q = useQuery({
-        queryKey: ["admin-members", params],
-        enabled: isAdmin, // only admins should hit this
-        queryFn: async () => (await api.get(EP.MEMBERS, { params })).data,
-        keepPreviousData: true,
+        queryKey: ['users', filters],
+        queryFn: fetchUsers,
+        placeholderData: (prev) => prev,
     });
+    function asArray(v) {
+        if (Array.isArray(v))
+            return v;
+        if (v && typeof v === 'object' && 'results' in v)
+            return v.results ?? [];
+        return [];
+    }
+    const items = asArray(q.data);
     const qc = useQueryClient();
     // Mutations
     const toggleActive = useMutation({

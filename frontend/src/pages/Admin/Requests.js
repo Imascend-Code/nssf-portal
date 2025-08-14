@@ -1,7 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../../api/client";
 import { Container, Card, CardHeader, CardContent, Typography, TextField, InputAdornment, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Stack, CircularProgress, Alert, Chip, MenuItem, Select, FormControl, InputLabel, Pagination, Box, } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 function StatusChip({ value }) {
@@ -21,19 +20,12 @@ export default function AdminRequests() {
     const [search, setSearch] = React.useState("");
     const [status, setStatus] = React.useState("");
     const q = useQuery({
-        queryKey: ["requests-admin", { page, page_size: pageSize, search, status }],
-        queryFn: async () => (await api.get("/requests/", {
-            params: {
-                page,
-                page_size: pageSize,
-                search: search || undefined,
-                status: status || undefined,
-            },
-        })).data,
-        keepPreviousData: true,
-        staleTime: 30000,
+        queryKey: ['admin-requests', { page, page_size, search, status }],
+        queryFn: fetchAdminRequests,
+        placeholderData: (prev) => prev, // ← replaces keepPreviousData
     });
-    const items = Array.isArray(q.data) ? q.data : q.data?.results ?? [];
+    const items = Array.isArray(q.data) ? q.data : (q.data?.results ?? []);
+    // const items: AdminRequest[] = Array.isArray(q.data) ? (q.data as any) : q.data?.results ?? [];
     const total = q.data?.count ?? items.length;
     const pageCount = Math.max(1, Math.ceil(total / pageSize));
     return (_jsx(Container, { maxWidth: "lg", sx: { py: 4 }, children: _jsxs(Card, { variant: "outlined", sx: { borderRadius: 3 }, children: [_jsx(CardHeader, { title: _jsx(Typography, { variant: "h6", children: "All Requests" }) }), _jsxs(CardContent, { children: [_jsxs(Stack, { direction: { xs: "column", sm: "row" }, spacing: 1.5, sx: { mb: 2 }, children: [_jsx(TextField, { placeholder: "Search title, requester\u2026", value: search, onChange: (e) => {

@@ -54,26 +54,13 @@ export default function AdminRequests() {
   const [status, setStatus] = React.useState<string>("");
 
   const q = useQuery({
-    queryKey: ["requests-admin", { page, page_size: pageSize, search, status }],
-    queryFn: async () =>
-      (
-        await api.get<{
-          count?: number;
-          results?: AdminRequest[];
-        }>("/requests/", {
-          params: {
-            page,
-            page_size: pageSize,
-            search: search || undefined,
-            status: status || undefined,
-          },
-        })
-      ).data,
-    keepPreviousData: true,
-    staleTime: 30_000,
-  });
+     queryKey: ['admin-requests', { page, page_size, search, status }],
+  queryFn: fetchAdminRequests,
+  placeholderData: (prev) => prev, // ← replaces keepPreviousData
+})
+  const items: AdminRequest[] = Array.isArray(q.data) ? (q.data as any) : (q.data?.results ?? [])
 
-  const items: AdminRequest[] = Array.isArray(q.data) ? (q.data as any) : q.data?.results ?? [];
+  // const items: AdminRequest[] = Array.isArray(q.data) ? (q.data as any) : q.data?.results ?? [];
   const total = (q.data as any)?.count ?? items.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 

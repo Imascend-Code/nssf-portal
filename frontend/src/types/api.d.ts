@@ -3,6 +3,8 @@
  * Do not make direct changes to the file.
  */
 
+export type Role = 'ADMIN' | 'STAFF' | 'MEMBER' | string
+
 export interface paths {
     "/api/v1/audits/": {
         parameters: {
@@ -1690,4 +1692,29 @@ export interface operations {
             };
         };
     };
+}
+
+
+export type User = {
+  id: number
+  email: string
+  role?: Role
+  // used in code:
+  is_superuser?: boolean
+  is_staff?: boolean
+}
+
+export type Me = User & {
+  full_name?: string
+  phone?: string
+  nssf_number?: string
+  // used in code:
+  beneficiaries_count?: number
+  address?: string
+  city?: string
+  bank_name?: string
+  bank_account?: string
+  is_active?: boolean
+  date_joined?: string
+  balance?: number
 }
