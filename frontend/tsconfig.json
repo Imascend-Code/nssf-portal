@@ -6,9 +6,9 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
+    "paths": { "@/*": ["./src/*"] },
+
+    // your existing prefs
     "noImplicitAny": false,
     "noUnusedParameters": false,
     "skipLibCheck": true,
@@ -16,5 +16,4 @@
     "noUnusedLocals": false,
     "strictNullChecks": false
   }
-  
 }
