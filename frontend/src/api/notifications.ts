@@ -1,5 +1,5 @@
 // src/api/notifications.ts
-import { api } from "@/api/client";
+import { api } from "../api/client";
 
 export type Notification = {
   id: number;

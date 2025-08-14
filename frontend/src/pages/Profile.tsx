@@ -30,7 +30,7 @@ import {
   useUpdateProfile,
   useBeneficiaries,
   useAddBeneficiary,
-} from "@/api/hooks";
+} from "../api/hooks";
 
 type ProfileForm = {
   full_name?: string;

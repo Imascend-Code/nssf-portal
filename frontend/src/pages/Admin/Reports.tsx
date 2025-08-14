@@ -7,7 +7,7 @@ import {
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import { useReport } from "@/api/hooks";
+import { useReport } from "../../api/hooks";
 
 function KPI({ label, value, icon }: { label: string; value: React.ReactNode; icon: React.ReactNode }) {
     return (

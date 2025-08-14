@@ -1,8 +1,8 @@
 // src/pages/Dashboard.tsx
 import * as React from 'react';
-import { useProfile, usePayments, useMyRequests } from '@/api/hooks';
+import { useProfile, usePayments, useMyRequests } from '../api/hooks';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/api/client';
+import { api } from '../../api/client';
 
 import {
   Box,

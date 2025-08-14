@@ -6,7 +6,7 @@ import {
 } from "@mui/material";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
-import { useProfile, usePayments } from "@/api/hooks";
+import { useProfile, usePayments } from "../api/hooks";
 
 function Money({ v }: { v: number | string | null | undefined }) {
     if (v == null) return <>—</>;

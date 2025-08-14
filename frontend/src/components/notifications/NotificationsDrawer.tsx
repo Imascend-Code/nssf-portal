@@ -8,7 +8,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DoneIcon from "@mui/icons-material/Done";
 import {
   fetchNotifications, markRead, markAllRead, markManyRead, Notification
-} from "@/api/notifications";
+} from "../api/notifications";
 
 export default function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [loading, setLoading] = React.useState(true);

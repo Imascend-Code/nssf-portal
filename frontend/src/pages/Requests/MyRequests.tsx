@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { useMyRequests } from "@/api/hooks";
+import { useMyRequests } from "../../api/hooks";
 import {
   Container,
   Card,
