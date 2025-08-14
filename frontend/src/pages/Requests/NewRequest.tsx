@@ -18,7 +18,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { useCategories, useCreateRequest, useUploadAttachment } from "../api/hooks";
+import { useCategories, useCreateRequest, useUploadAttachment } from "../../api/hooks";
 
 export default function NewRequest() {
   const cats = useCategories();

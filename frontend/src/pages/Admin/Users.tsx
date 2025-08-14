@@ -33,7 +33,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore } from "../../store/auth";
 
 type Role = "PENSIONER" | "STAFF" | "ADMIN";
 type AdminMember = {
